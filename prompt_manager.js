@@ -1537,26 +1537,6 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
 
             <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.2);">
                 <div style="margin-bottom: 8px; font-weight: 600; display:flex; justify-content:space-between; align-items:center;">
-                    <span>📋 实时填表提示词</span>
-
-                    <div style="display: flex; background: rgba(127, 127, 127, 0.15); padding: 4px; border-radius: 8px; gap: 4px;">
-                        <label style="flex: 1; text-align: center; justify-content: center; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; color: ${window.Gaigai.ui.tc}; opacity: 0.7; display: flex; align-items: center; border: 1px solid transparent;" id="gg_tab_label_realtime_full">
-                            <input type="radio" name="pmt-realtime-type" value="realtime-full" checked>
-                            📋 含表8
-                        </label>
-                        <label style="flex: 1; text-align: center; justify-content: center; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; color: ${window.Gaigai.ui.tc}; opacity: 0.7; display: flex; align-items: center; border: 1px solid transparent;" id="gg_tab_label_realtime_lite">
-                            <input type="radio" name="pmt-realtime-type" value="realtime-lite">
-                            📋 无表8
-                        </label>
-                    </div>
-                </div>
-
-                <textarea id="gg_pmt_table" style="width:100%; height:150px; padding:10px; border:1px solid rgba(0,0,0,0.1); border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; background:rgba(255,255,255,0.5); box-sizing: border-box;">${window.Gaigai.esc(currentData.tablePrompt !== undefined ? currentData.tablePrompt : DEFAULT_TABLE_PROMPT)}</textarea>
-                <div style="font-size:10px; opacity:0.5; margin-top:4px; text-align:right;" id="gg_pmt_table_desc">当前编辑：实时填表提示词（完整版，包含表8 - 关于我）</div>
-            </div>
-
-            <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.2);">
-                <div style="margin-bottom: 8px; font-weight: 600; display:flex; justify-content:space-between; align-items:center;">
                     <span>📝 总结/批量提示词</span>
 
                     <div style="display: flex; background: rgba(127, 127, 127, 0.15); padding: 4px; border-radius: 8px; gap: 4px;">
@@ -1601,10 +1581,6 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             let tempTablePmt = currentData.summaryPromptTable !== undefined ? currentData.summaryPromptTable : DEFAULT_SUM_TABLE;
             let tempChatPmt = currentData.summaryPromptChat !== undefined ? currentData.summaryPromptChat : DEFAULT_SUM_CHAT;
             let tempBackfillPmt = currentData.backfillPrompt !== undefined ? currentData.backfillPrompt : DEFAULT_BACKFILL_PROMPT;
-
-            // ✨ 实时填表提示词（两个版本）
-            let tempRealtimePmtFull = currentData.tablePrompt !== undefined ? currentData.tablePrompt : DEFAULT_TABLE_PROMPT;
-            let tempRealtimePmtLite = DEFAULT_TABLE_PROMPT_NO_TABLE8;
 
             // ✨ 批量填表提示词（两个版本）
             let tempBackfillPmtNoTable8 = DEFAULT_BACKFILL_PROMPT_NO_TABLE8;
@@ -1728,43 +1704,6 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
                 });
             }
 
-            // ✨ 实时填表提示词标签切换
-            $('input[name="pmt-realtime-type"]').on('change', function() {
-                const type = $(this).val();
-                const currentVal = $('#gg_pmt_table').val();
-                const prevType = $('input[name="pmt-realtime-type"]').not(this).filter((i, el) => {
-                    return $(el).data('was-checked-realtime');
-                }).val() || 'realtime-full';
-
-                // 保存当前内容
-                if (prevType === 'realtime-full') tempRealtimePmtFull = currentVal;
-                else if (prevType === 'realtime-lite') tempRealtimePmtLite = currentVal;
-
-                // 加载新内容
-                if (type === 'realtime-full') {
-                    $('#gg_pmt_table').val(tempRealtimePmtFull);
-                    const statusIcon = enableUserInfoTable ? '✅ 当前使用' : '⚠️ 未使用';
-                    $('#gg_pmt_table_desc').html(`当前编辑：实时填表提示词（完整版，包含表8 - 关于我）<br><span style="color: ${enableUserInfoTable ? '#28a745' : '#ffc107'};">${statusIcon}</span>`);
-                } else if (type === 'realtime-lite') {
-                    $('#gg_pmt_table').val(tempRealtimePmtLite);
-                    const statusIcon = !enableUserInfoTable ? '✅ 当前使用' : '⚠️ 未使用';
-                    $('#gg_pmt_table_desc').html(`当前编辑：实时填表提示词（精简版，不包含表8 - 关于我）<br><span style="color: ${!enableUserInfoTable ? '#28a745' : '#ffc107'};">${statusIcon}</span>`);
-                }
-
-                $('input[name="pmt-realtime-type"]').data('was-checked-realtime', false);
-                $(this).data('was-checked-realtime', true);
-            });
-
-            // ✨ 初始化：标记默认选中的实时填表标签
-            $('input[name="pmt-realtime-type"]:checked').data('was-checked-realtime', true);
-
-            // 实时填表文本框失去焦点时同步
-            $('#gg_pmt_table').on('input blur', function() {
-                const type = $('input[name="pmt-realtime-type"]:checked').val();
-                if (type === 'realtime-full') tempRealtimePmtFull = $(this).val();
-                else if (type === 'realtime-lite') tempRealtimePmtLite = $(this).val();
-            });
-
             // 切换总结/批量提示词标签
             $('input[name="pmt-sum-type"]').on('change', function() {
                 const type = $(this).val();
@@ -1820,11 +1759,9 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             // 保存按钮
             $('#gg_save_pmt').on('click', async function() {
                 $('#gg_pmt_summary').trigger('blur');
-                $('#gg_pmt_table').trigger('blur');
 
                 // 更新当前预设的数据
                 currentData.nsfwPrompt = $('#gg_pmt_nsfw').val();
-                currentData.tablePrompt = tempRealtimePmtFull;  // 只保存完整版
                 currentData.summaryPromptTable = tempTablePmt;
                 currentData.summaryPromptChat = tempChatPmt;
                 currentData.backfillPrompt = tempBackfillPmt;
@@ -1869,14 +1806,6 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
                         </label>
 
                         <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; background:var(--g-c); border:1px solid rgba(255,255,255,0.2); padding:8px; border-radius:6px;">
-                            <input type="checkbox" id="gg_rst_table" checked style="transform:scale(1.2);">
-                            <div>
-                                <div style="font-weight:bold;">📋 实时填表提示词</div>
-                                <div style="font-size:10px; opacity:0.8;">(Memory Guide - Realtime)</div>
-                            </div>
-                        </label>
-
-                        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; background:var(--g-c); border:1px solid rgba(255,255,255,0.2); padding:8px; border-radius:6px;">
                             <input type="checkbox" id="gg_rst_sum-table" checked style="transform:scale(1.2);">
                             <div>
                                 <div style="font-weight:bold;">📊 表格总结提示词</div>
@@ -1914,18 +1843,6 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
                         if ($('#gg_rst_nsfw').is(':checked')) {
                             currentData.nsfwPrompt = NSFW_UNLOCK;
                             $('#gg_pmt_nsfw').val(NSFW_UNLOCK);
-                        }
-                        if ($('#gg_rst_table').is(':checked')) {
-                            currentData.tablePrompt = DEFAULT_TABLE_PROMPT;
-                            tempRealtimePmtFull = DEFAULT_TABLE_PROMPT;
-                            tempRealtimePmtLite = DEFAULT_TABLE_PROMPT_NO_TABLE8;
-                            // 更新当前显示的文本框
-                            const currentRealtimeType = $('input[name="pmt-realtime-type"]:checked').val();
-                            if (currentRealtimeType === 'realtime-full') {
-                                $('#gg_pmt_table').val(DEFAULT_TABLE_PROMPT);
-                            } else {
-                                $('#gg_pmt_table').val(DEFAULT_TABLE_PROMPT_NO_TABLE8);
-                            }
                         }
                         if ($('#gg_rst_sum-table').is(':checked')) {
                             currentData.summaryPromptTable = DEFAULT_SUM_TABLE;
