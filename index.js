@@ -68,6 +68,7 @@
         hideTag: true,
         filterHistory: true,
         cloudSync: true,
+        enableUserInfoTable: false,    // ❌ 默认关闭【关于我】表格记录（角色扮演场景不需要）
         persistUserInfo: false,        // ❌ 默认关闭【关于我】跨会话记忆
         // ==================== 独立向量检索配置 ====================
         vectorEnabled: false,          // ❌ 默认关闭独立向量检索
@@ -1330,6 +1331,7 @@
                     contextLimit: C.contextLimit,
                     contextLimitCount: C.contextLimitCount,
                     protectGreeting: C.protectGreeting,
+                    enableUserInfoTable: C.enableUserInfoTable,
                     persistUserInfo: C.persistUserInfo,
                     // ✅ 向量检索配置
                     vectorEnabled: C.vectorEnabled,
@@ -1577,6 +1579,7 @@
                 C.autoSummarySilent = globalConfig.autoSummarySilent !== undefined ? globalConfig.autoSummarySilent : true;
                 C.contextLimit = globalConfig.contextLimit !== undefined ? globalConfig.contextLimit : true;
                 C.contextLimitCount = globalConfig.contextLimitCount !== undefined ? globalConfig.contextLimitCount : 30;
+                C.enableUserInfoTable = globalConfig.enableUserInfoTable !== undefined ? globalConfig.enableUserInfoTable : false;
                 C.persistUserInfo = globalConfig.persistUserInfo !== undefined ? globalConfig.persistUserInfo : false;
                 // ✅ 向量检索配置
                 C.vectorEnabled = globalConfig.vectorEnabled !== undefined ? globalConfig.vectorEnabled : false;
@@ -2830,6 +2833,12 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         cs.forEach(cm => {
             const sh = m.get(cm.ti);
             if (!sh) return;
+
+            // 🔒 【关于我】表格开关保护：如果未启用，跳过表8的所有操作
+            if (cm.ti === 8 && !C.enableUserInfoTable) {
+                console.warn(`🔒 [关于我表格] 已关闭【启用关于我记录】，跳过表8的${cm.t}操作`);
+                return; // 跳过表8的所有指令
+            }
 
             // 🛡️ 绿色行保护：拦截对已总结行的修改和删除操作
             if ((cm.t === 'update' || cm.t === 'delete') && cm.ri !== null) {
@@ -9370,26 +9379,39 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 (注:勾选后,总结表中已被向量化的内容将自动标记为隐藏/绿色)
             </div>
 
-            <!-- ✨✨✨ 新增：【关于我】跨会话记忆 ✨✨✨ -->
+            <!-- ✨✨✨ 新增：【关于我】表格总开关 + 跨会话记忆 ✨✨✨ -->
             <div style="margin-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 12px;">
+                <!-- 【关于我】表格总开关 -->
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight: 600;">
-                    <input type="checkbox" id="gg_c_persist_user_info" ${C.persistUserInfo ? 'checked' : ''}>
-                    <span>👤 启用【关于我】跨会话记忆</span>
+                    <input type="checkbox" id="gg_c_enable_user_info" ${C.enableUserInfoTable ? 'checked' : ''}>
+                    <span>📝 启用【关于我】表格记录</span>
                 </label>
-                <div style="font-size: 10px; color: #666; margin-top: 6px; margin-left: 22px; line-height: 1.6;">
-                    开启后,【关于我】表格的内容将在所有对话间共享。<br>
-                    <strong>• 开启：</strong>切换对话时会自动加载之前记录的用户信息<br>
+                <div style="font-size: 10px; color: #666; margin-top: 4px; margin-left: 22px; line-height: 1.6;">
+                    <strong>• 开启：</strong>AI会记录用户透露的个人信息到【关于我】表格（真人陪伴场景）<br>
+                    <strong>• 关闭：</strong>AI不记录【关于我】表格，用户信息视为角色扮演内容（RP场景）
+                </div>
+
+                <!-- 【关于我】跨会话记忆 -->
+                <div id="gg_user_info_persist_section" style="margin-top: 10px; padding-left: 22px; ${C.enableUserInfoTable ? '' : 'opacity: 0.5; pointer-events: none;'}">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight: 500;">
+                        <input type="checkbox" id="gg_c_persist_user_info" ${C.persistUserInfo ? 'checked' : ''} ${C.enableUserInfoTable ? '' : 'disabled'}>
+                        <span>💾 启用【关于我】跨会话记忆</span>
+                    </label>
+                    <div style="font-size: 10px; color: #666; margin-top: 4px; margin-left: 22px; line-height: 1.6;">
+                        开启后,【关于我】表格的内容将在所有对话间共享。<br>
+                        <strong>• 开启：</strong>切换对话时会自动加载之前记录的用户信息<br>
                     <strong>• 关闭：</strong>每个对话独立记录用户信息,互不影响
                 </div>
 
-                <!-- 操作按钮区域 -->
-                <div style="margin-top: 8px; display: flex; gap: 6px;">
-                    <button id="gg_btn_clear_user_info_local" style="background: #ff9800; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-trash"></i> 清空当前会话用户信息
-                    </button>
-                    <button id="gg_btn_clear_user_info_global" style="background: #f44336; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-trash-can"></i> 清空全局用户信息
-                    </button>
+                    <!-- 操作按钮区域 -->
+                    <div style="margin-top: 8px; display: flex; gap: 6px;">
+                        <button id="gg_btn_clear_user_info_local" style="background: #ff9800; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid fa-trash"></i> 清空当前会话用户信息
+                        </button>
+                        <button id="gg_btn_clear_user_info_global" style="background: #f44336; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid fa-trash-can"></i> 清空全局用户信息
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -9769,6 +9791,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 C.autoSummaryDelayCount = parseInt($('#gg_c_auto_sum_delay_count').val()) || 5;
                 C.vectorEnabled = $('#gg_c_vector_enabled').is(':checked');
                 C.autoVectorizeSummary = $('#gg_c_auto_vectorize').is(':checked');
+                C.enableUserInfoTable = $('#gg_c_enable_user_info').is(':checked');
                 C.persistUserInfo = $('#gg_c_persist_user_info').is(':checked');
 
                 API_CONFIG.summarySource = $('input[name="cfg-sum-src"]:checked').val();
@@ -9869,7 +9892,25 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             $('#gg_open_api').on('click', () => navTo('AI总结配置', shapi));
             $('#gg_open_pmt').on('click', () => navTo('提示词管理', window.Gaigai.PromptManager.showPromptManager));
 
-            // ✨✨✨ 【关于我】按钮事件绑定 ✨✨✨
+            // ✨✨✨ 【关于我】开关和按钮事件绑定 ✨✨✨
+            // 【启用关于我记录】开关
+            $('#gg_c_enable_user_info').on('change', function () {
+                const isEnabled = $(this).is(':checked');
+                const $persistSection = $('#gg_user_info_persist_section');
+                const $persistCheckbox = $('#gg_c_persist_user_info');
+
+                if (isEnabled) {
+                    $persistSection.css({'opacity': '1', 'pointer-events': 'auto'});
+                    $persistCheckbox.prop('disabled', false);
+                } else {
+                    $persistSection.css({'opacity': '0.5', 'pointer-events': 'none'});
+                    $persistCheckbox.prop('disabled', true).prop('checked', false);
+                }
+
+                syncUIToConfig();
+                m.save(false, true);
+            });
+
             $('#gg_btn_clear_user_info_local').off('click').on('click', async function () {
                 if (!await customConfirm('确定清空当前会话的【关于我】数据吗？\n\n⚠️ 此操作仅清空当前对话，不影响全局记忆。\n\n如果开启了跨会话记忆，切换对话后仍会加载全局数据。', '清空当前会话')) return;
 
