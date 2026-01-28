@@ -72,8 +72,6 @@
         hideTag: true,
         filterHistory: true,
         cloudSync: true,
-        syncWorldInfo: false,          // ❌ 默认关闭世界书同步
-        worldInfoVectorized: false,    // ❌ 默认关闭世界书自带向量化（已移除UI选项）
         persistUserInfo: false,        // ❌ 默认关闭【关于用户】跨会话记忆
         // ==================== 独立向量检索配置 ====================
         vectorEnabled: false,          // ❌ 默认关闭独立向量检索
@@ -1079,12 +1077,11 @@
 
             this.m.save(false, true); // 总结数据立即保存
 
-            // ⚡ 自动化流：如果开启了"总结后自动向量化"，且未开启"同步到世界书"，则直接触发向量化
-            // （如果开启了世界书同步，向量化会在世界书同步完成后触发，避免重复）
+            // ⚡ 自动化流：如果开启了"总结后自动向量化"，则直接触发向量化
             const currentConfig = window.Gaigai?.config_obj;
-            if (currentConfig && currentConfig.autoVectorizeSummary && !currentConfig.syncWorldInfo) {
+            if (currentConfig && currentConfig.autoVectorizeSummary) {
                 if (window.Gaigai.VM && typeof window.Gaigai.VM.syncSummaryToBook === 'function') {
-                    console.log('⚡ [自动化流] 总结保存完成，正在触发自动向量化（未启用世界书同步）...');
+                    console.log('⚡ [自动化流] 总结保存完成，正在触发自动向量化...');
                     // 使用 setTimeout 避免阻塞保存流程
                     setTimeout(async () => {
                         try {
@@ -1178,7 +1175,6 @@
             this.s = [];
             this.id = null;
             this.structureBound = false;
-            this.wiConfig = { bookName: '' };
             this.initTables(DEFAULT_TABLES);
         }
 
@@ -1306,7 +1302,6 @@
                 d: this.s.map(sh => sh.json()),
                 structure: this.s.map(sh => ({ n: sh.n, c: sh.c })), // ✅ 新增：保存当前表结构（表名和列名）
                 structureBound: this.structureBound, // ✅ 保存结构绑定状态
-                wiConfig: this.wiConfig, // ✅ 保存世界书自定义配置
                 summarized: summarizedRows,
                 colWidths: userColWidths,
                 rowHeights: userRowHeights,
@@ -1342,8 +1337,6 @@
                     protectGreeting: C.protectGreeting,
                     filterTags: C.filterTags,
                     filterTagsWhite: C.filterTagsWhite,
-                    syncWorldInfo: C.syncWorldInfo,
-                    worldInfoVectorized: C.worldInfoVectorized,
                     persistUserInfo: C.persistUserInfo,
                     // ✅ 向量检索配置
                     vectorEnabled: C.vectorEnabled,
@@ -1594,8 +1587,6 @@
                 C.contextLimitCount = globalConfig.contextLimitCount !== undefined ? globalConfig.contextLimitCount : 30;
                 C.filterTags = globalConfig.filterTags !== undefined ? globalConfig.filterTags : '';
                 C.filterTagsWhite = globalConfig.filterTagsWhite !== undefined ? globalConfig.filterTagsWhite : '';
-                C.syncWorldInfo = globalConfig.syncWorldInfo !== undefined ? globalConfig.syncWorldInfo : false;
-                C.worldInfoVectorized = globalConfig.worldInfoVectorized !== undefined ? globalConfig.worldInfoVectorized : false;
                 C.persistUserInfo = globalConfig.persistUserInfo !== undefined ? globalConfig.persistUserInfo : false;
                 // ✅ 向量检索配置
                 C.vectorEnabled = globalConfig.vectorEnabled !== undefined ? globalConfig.vectorEnabled : false;
@@ -1622,12 +1613,6 @@
                     this.initTables(finalData.structure, false);
                 }
                 this.structureBound = finalData.structureBound || false;
-
-                // 恢复世界书自定义配置
-                if (finalData.wiConfig) {
-                    this.wiConfig = finalData.wiConfig;
-                    console.log('✅ [世界书配置] 已恢复');
-                }
 
                 // 恢复数据
                 finalData.d.forEach((sd, i) => { if (this.s[i]) this.s[i].from(sd); });
@@ -2963,9 +2948,8 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         let summaryMessages = [];
         let tableMessages = [];
 
-        // A. 准备总结数据 (如果有且未开启世界书同步)
-        // 互斥逻辑：开启世界书同步后，由酒馆的世界书系统负责发送总结，插件不再重复注入
-        if (m.sm.has() && !C.syncWorldInfo) {
+        // A. 准备总结数据
+        if (m.sm.has()) {
             // 1. 旧逻辑：合并字符串（用于兼容旧的文本变量替换）
             strSummary = '=== 📚 记忆总结（历史存档） ===\n\n' + m.sm.load() + '\n\n';
 
@@ -9469,14 +9453,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         </div>
 
         <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 6px; padding: 10px; margin-top: 10px;">
-            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight: 600;">
-                <input type="checkbox" id="gg_c_sync_wi" ${C.syncWorldInfo ? 'checked' : ''}>
-                <span>🌏 同步到世界书</span>
-            </label>
-            <div style="font-size: 10px; color: #666; margin-top: 6px; margin-left: 22px; line-height: 1.4;">
-                将总结内容自动写入名为 <strong>[Memory_Context_Auto]</strong> 的世界书（常驻条目，触发词：总结/summary/前情提要/memory）
-            </div>
-
             <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight: 500; margin-top: 8px;">
                 <input type="checkbox" id="gg_c_vector_enabled" ${C.vectorEnabled ? 'checked' : ''}>
                 <span>🔍 启用插件独立向量检索</span>
@@ -9493,8 +9469,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 总结完成后,自动将内容同步到专属向量书并执行向量化<br>
                 (注:勾选后,总结表中已被向量化的内容将自动标记为隐藏/绿色)
             </div>
-
-            ${window.Gaigai.WI.getSettingsUI(m.wiConfig)}
 
             <!-- ✨✨✨ 新增：【关于用户】跨会话记忆 ✨✨✨ -->
             <div style="margin-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 12px;">
@@ -9517,13 +9491,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                         <i class="fa-solid fa-trash-can"></i> 清空全局用户信息
                     </button>
                 </div>
-            </div>
-
-            <!-- ✨✨✨ 新增：手动覆盖按钮区域 ✨✨✨ -->
-            <div style="margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px; display: flex; align-items: center; justify-content: flex-end;">
-                <button id="gg_btn_force_sync_wi" style="background: #ff9800; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-arrows-rotate"></i> 强制用总结表覆盖世界书
-                </button>
             </div>
         </div>
 
@@ -9913,13 +9880,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 C.autoSummaryDelayCount = parseInt($('#gg_c_auto_sum_delay_count').val()) || 5;
                 C.filterTags = $('#gg_c_filter_tags').val();
                 C.filterTagsWhite = $('#gg_c_filter_tags_white').val();
-                C.syncWorldInfo = $('#gg_c_sync_wi').is(':checked');
                 C.vectorEnabled = $('#gg_c_vector_enabled').is(':checked');
                 C.autoVectorizeSummary = $('#gg_c_auto_vectorize').is(':checked');
                 C.persistUserInfo = $('#gg_c_persist_user_info').is(':checked');
-
-                // ✅ 保存世界书自定义配置
-                m.wiConfig.bookName = $('#gg_wi_book_name').val().trim();
 
                 API_CONFIG.summarySource = $('input[name="cfg-sum-src"]:checked').val();
 
@@ -10024,9 +9987,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 console.log('🔒 [配置保存] 已锁定，暂停其他 loadConfig 调用');
 
                 try {
-                    // ✨ 保存旧配置状态，用于检测世界书同步的变化
-                    const oldSyncWorldInfo = C.syncWorldInfo;
-
                     // ✅ 步骤 1：调用统一的同步函数（复用代码，避免重复）
                     syncUIToConfig();
                     console.log('✅ [配置保存] 步骤1：内存对象已更新（通过 syncUIToConfig）');
@@ -10034,11 +9994,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                     // ✅ 步骤 1.5：【核心修复】立即将 C 写入当前角色的存档！
                     m.save(false, true); // 配置更改立即保存
                     console.log('✅ [配置保存] 已同步至当前角色存档');
-
-                    // ✨ 检测世界书同步从开启到关闭的状态变化，提示用户手动禁用世界书条目
-                    if (oldSyncWorldInfo === true && C.syncWorldInfo === false) {
-                        await customAlert('⚠️ 检测到您关闭了世界书同步\n\n请务必手动前往酒馆顶部的【世界书/知识书】面板，禁用或删除 [Memory_Context_Auto] 条目，否则旧的总结内容仍会持续发送给 AI。\n\n💡 互斥机制：\n• 开启同步：由世界书发送总结（插件不重复注入）\n• 关闭同步：由插件注入总结（需手动清理世界书）', '重要提示');
-                    }
 
                     // ✅ 步骤 2：异步保存到云端（不阻塞用户操作）
                     await saveAllSettingsToCloud();
@@ -10077,57 +10032,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 m.save();
                 refreshTable();
                 await customAlert('✅ 全局【关于用户】数据已清空。\n\n所有对话将重新开始记录用户信息。', '清空成功');
-            });
-
-            // ✨✨✨ 强制覆盖世界书 (手动绑定版) ✨✨✨
-            $('#gg_btn_force_sync_wi').off('click').on('click', async function () {
-                // 0. 检查世界书同步是否开启
-                if (!C.syncWorldInfo) {
-                    await customAlert('⚠️ 世界书同步已关闭\n\n请先在配置中开启【同步到世界书】选项。', '功能未启用');
-                    return;
-                }
-
-                const summarySheet = m.get(m.s.length - 1);
-
-                // 1. 安全拦截
-                if (!summarySheet || summarySheet.r.length === 0) {
-                    await customAlert('❌ 总结表格为空！\n\n无法执行覆盖操作。', '安全拦截');
-                    return;
-                }
-
-                // 2. 确认提示
-                const confirmMsg = `⚠️ 确定要强制覆盖吗？\n\n1. 将重新生成当前角色的记忆世界书文件。\n2. 总结表中的 ${summarySheet.r.length} 条记录将被写入。`;
-                if (!await customConfirm(confirmMsg, '覆盖确认')) {
-                    return;
-                }
-
-                const btn = $(this);
-                const oldText = btn.html();
-                btn.html('<i class="fa-solid fa-spinner fa-spin"></i> 处理中...').prop('disabled', true);
-
-                try {
-                    // ✅ 保存最新的书名配置到内存
-                    m.wiConfig.bookName = $('#gg_wi_book_name').val().trim();
-                    m.save(false, true); // 世界书配置更改立即保存
-
-                    console.log('⚡ [强制覆盖] 调用统一同步接口...');
-                    // 调用世界书管理器的统一同步接口（强制覆盖模式）
-                    await window.Gaigai.WI.syncToWorldInfo(null, true);
-
-                    // 成功提示
-                    const bookName = window.Gaigai.WI._getStableBookName(m.gid());
-                    if (typeof toastr !== 'undefined') {
-                        toastr.success(`文件 ${bookName} 已生成。\n请在上方"世界/知识书"下拉框中手动选中它。`, '覆盖成功', { timeOut: 5000 });
-                    } else {
-                        await customAlert(`✅ 文件已生成！\n\n请手动在酒馆上方的"世界/知识书"下拉框中选择：\n${bookName}`, '覆盖成功');
-                    }
-
-                } catch (e) {
-                    console.error(e);
-                    await customAlert(`操作失败: ${e.message}`, '错误');
-                } finally {
-                    btn.html(oldText).prop('disabled', false);
-                }
             });
 
             // ==================== 向量化设置按钮 ====================
@@ -10688,11 +10592,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             delete pendingTimers[key];
         });
         console.log('🔒 [ochat] 会话切换锁已启用');
-
-        // ✨ [防串味] 重置世界书状态
-        if (window.Gaigai && window.Gaigai.WI && typeof window.Gaigai.WI.resetState === 'function') {
-            window.Gaigai.WI.resetState();
-        }
 
         // 加载全局配置
         try { await loadConfig(); } catch (e) { }
@@ -11978,13 +11877,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                                     .done(function () {
                                         console.log('✅ [Loader] backfill_manager.js 加载成功');
 
-                                        // 🆕 加载 world_info.js (必须在 summary_manager 之前加载)
-                                        const worldInfoUrl = `${EXTENSION_PATH}/world_info.js`;
-                                        $.getScript(worldInfoUrl)
-                                            .done(function () {
-                                                console.log('✅ [Loader] world_info.js 加载成功');
-
-                                                // 🆕 加载 summary_manager.js
+                                        // 🆕 加载 summary_manager.js
                                                 const summaryManagerUrl = `${EXTENSION_PATH}/summary_manager.js`;
                                                 $.getScript(summaryManagerUrl)
                                                     .done(function () {
@@ -12013,10 +11906,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                                                                     console.error('⚠️ [Loader] window.Gaigai.BackfillManager 未成功挂载！');
                                                                     console.error(`📍 尝试加载的 URL: ${backfillManagerUrl}`);
                                                                 }
-                                                                if (!window.Gaigai.WI) {
-                                                                    console.error('⚠️ [Loader] window.Gaigai.WI 未成功挂载！');
-                                                                    console.error(`📍 尝试加载的 URL: ${worldInfoUrl}`);
-                                                                }
                                                                 if (!window.Gaigai.VM) {
                                                                     console.error('⚠️ [Loader] window.Gaigai.VM 未成功挂载！');
                                                                     console.error(`📍 尝试加载的 URL: ${vectorManagerUrl}`);
@@ -12044,16 +11933,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                                                         // 即使加载失败，也继续初始化（降级模式）
                                                         setTimeout(tryInit, 500);
                                                     });
-                                            })
-                                            .fail(function (jqxhr, settings, exception) {
-                                                console.error('❌ [Loader] world_info.js 加载失败！');
-                                                console.error(`📍 尝试加载的 URL: ${worldInfoUrl}`);
-                                                console.error(`📍 HTTP 状态码: ${jqxhr.status}`);
-                                                console.error(`📍 错误详情:`, exception);
-                                                console.error(`💡 提示：请检查文件是否存在，或控制台 Network 面板查看具体错误`);
-                                                // 即使加载失败，也继续初始化（降级模式）
-                                                setTimeout(tryInit, 500);
-                                            });
                                     })
                                     .fail(function (jqxhr, settings, exception) {
                                         console.error('❌ [Loader] backfill_manager.js 加载失败！');
@@ -12130,8 +12009,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         updateCurrentSnapshot: updateCurrentSnapshot,  // ✅ 子模块需要
         refreshTable: refreshTable,  // ✅ 子模块需要
         updateTabCount: updateTabCount,  // ✅ 子模块需要
-        syncToWorldInfo: (...args) => window.Gaigai.WI.syncToWorldInfo(...args),  // ✅ 总结模块需要同步到世界书（兼容性包装）
-        getCsrfToken: getCsrfToken,  // ✅ WI 模块需要
+        getCsrfToken: getCsrfToken,  // ✅ CSRF token获取
         customRetryAlert: customRetryAlert,  // ✅ 重试弹窗
         DEFAULT_TABLES: DEFAULT_TABLES  // ✅ 单一数据源：默认表格结构（供 prompt_manager.js 等子模块使用）
     });

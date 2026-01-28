@@ -904,7 +904,7 @@ ${lastError.message}
 
             // 构建上下文 (精简版：只保留名字，防止敏感设定触发空回)
             let contextBlock = `【背景资料】\n角色: ${charName}\n用户: ${userName}\n`;
-            // (已移除人物简介、性格、场景和世界书，仅基于聊天记录分析)
+            // (已移除人物简介、性格、场景等设定，仅基于聊天记录分析)
 
             // ⚠️ contextBlock 将在 backfillInstruction 之后推送（见下方）
 
@@ -995,7 +995,7 @@ ${lastError.message}
                 }
             }
 
-            // 4️⃣ Msg N (System): contextBlock (人设/世界书 - 被动参考数据)
+            // 4️⃣ Msg N (System): contextBlock (人设 - 被动参考数据)
             // ✅ [NSFW Fix] 将人设包装为"被动参考数据"，降低安全过滤触发率
             messages.push({
                 role: 'system',

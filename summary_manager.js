@@ -711,7 +711,7 @@
          * @param {boolean} skipSave - 是否跳过保存
          * @param {Array<number>} targetTableIndices - 🆕 指定要总结的表格索引数组（仅表格模式有效，为空则默认所有表）
          */
-        async callAIForSummary(forceStart = null, forceEnd = null, forcedMode = null, isSilent = false, isBatch = false, skipSave = false, targetTableIndices = null, skipWorldInfoSync = false) {
+        async callAIForSummary(forceStart = null, forceEnd = null, forcedMode = null, isSilent = false, isBatch = false, skipSave = false, targetTableIndices = null) {
             // 使用 window.Gaigai.loadConfig 确保配置最新
             const loadConfig = window.Gaigai.loadConfig || (() => Promise.resolve());
             await loadConfig();
@@ -839,39 +839,7 @@
                 if (charInfo) contextText += `\n【背景资料】\n角色: ${charName}\n用户: ${userName}\n\n${charInfo}\n`;
                 if (contextText) messages.push({ role: 'system', content: contextText });
 
-                // 3. 世界书 - 已禁用
-                // ✅ [优化] 停止在总结时读取世界书，防止设定被错误写入总结导致双重上下文
-                /*
-                let scanTextForWorldInfo = '';
-                const targetSlice = ctx.chat.slice(startIndex, endIndex);
-                targetSlice.forEach(msg => scanTextForWorldInfo += (msg.mes || msg.content || '') + '\n');
-
-                let worldInfoList = [];
-                try {
-                    if (ctx.worldInfo && Array.isArray(ctx.worldInfo)) worldInfoList = ctx.worldInfo;
-                    else if (window.world_info && Array.isArray(window.world_info)) worldInfoList = window.world_info;
-                } catch (e) { }
-
-                let triggeredLore = [];
-                if (Array.isArray(worldInfoList) && worldInfoList.length > 0 && scanTextForWorldInfo) {
-                    const lowerText = scanTextForWorldInfo.toLowerCase();
-                    worldInfoList.forEach(entry => {
-                        if (!entry || typeof entry !== 'object') return;
-                        const keysStr = entry.keys || entry.key || '';
-                        if (!keysStr) return;
-                        const keys = String(keysStr).split(',').map(k => k.trim().toLowerCase()).filter(k => k);
-                        if (keys.some(k => lowerText.includes(k))) {
-                            const content = entry.content || entry.entry || '';
-                            if (content) triggeredLore.push(`[相关设定: ${keys[0]}] ${content}`);
-                        }
-                    });
-                }
-                if (triggeredLore.length > 0) contextText += `\n【相关世界设定】\n${triggeredLore.join('\n')}\n`;
-                */
-
-                console.log('📊 [优化] 总结时不读取世界书，防止设定污染');
-
-                // 4. 前情提要 - 已删除
+                // 3. 前情提要 - 已删除
                 // ✅ [优化] 彻底不发送前情提要，避免内容重复和 Token 浪费
                 console.log('📊 [优化] 不发送前情提要，避免重复内容');
 
@@ -1052,11 +1020,6 @@
                 if (isSilent && !skipSave) {
                     // 总是先保存总结内容
                     m.sm.save(cleanSummary, currentRangeStr);
-
-                    // ✅ 只有当 !skipWorldInfoSync 为真时，才执行世界书同步
-                    if (!skipWorldInfoSync) {
-                        await window.Gaigai.syncToWorldInfo(cleanSummary);
-                    }
 
                     // ✅✅✅ [新增] 自动向量化开启时,自动隐藏总结表所有行
                     if (window.Gaigai.config_obj.autoVectorizeSummary) {
@@ -1315,7 +1278,6 @@
                         console.log(`🔒 [安全验证通过] 会话ID: ${currentSessionId}, 准备保存总结`);
 
                         m.sm.save(editedSummary, noteValue);
-                        await window.Gaigai.syncToWorldInfo(editedSummary);
 
                         // ✅✅✅ [新增] 自动向量化开启时,自动隐藏总结表所有行
                         if (window.Gaigai.config_obj.autoVectorizeSummary) {
@@ -1350,7 +1312,7 @@
                         const saveSessionId = m.gid();
                         if (saveSessionId !== initialSessionId) {
                             console.error(`🛑 [安全拦截] 会话ID不一致！弹窗打开: ${initialSessionId}, 最终保存时: ${saveSessionId}`);
-                            await window.Gaigai.customAlert('🛑 安全拦截：检测到会话切换，数据未保存\n\n警告：总结可能已同步到世界书，请检查数据完整性！', '严重错误');
+                            await window.Gaigai.customAlert('🛑 安全拦截：检测到会话切换，数据未保存！', '严重错误');
                             $o.remove();
                             resolve({ success: false });
                             return;
@@ -1616,8 +1578,8 @@
                 try {
                     console.log(`🔄 [分批 ${batchNum}/${batches.length}] 执行中...`);
 
-                    // 调用核心函数，跳过世界书同步
-                    const result = await self.callAIForSummary(batch.start, batch.end, mode, silent, true, false, null, true);
+                    // 调用核心函数
+                    const result = await self.callAIForSummary(batch.start, batch.end, mode, silent, true, false, null);
 
                     // 🛑 [熔断检测] 只有用户明确放弃时才终止
                     if (!result || result.success === false) {
@@ -1665,23 +1627,6 @@
                     if (window.Gaigai.stopBatch) break;
                     await new Promise(r => setTimeout(r, 1000));
                 }
-            }
-
-            // ✅ [分批缓存优化] 循环结束后，一次性同步完整表格到世界书
-            if (successCount > 0 && !window.Gaigai.stopBatch) {
-                console.log("🚀 [分批总结] 批量任务完成，正在将完整表格镜像同步到世界书...");
-                try {
-                    await window.Gaigai.syncToWorldInfo(null, true);
-                    console.log("✅ [分批总结] 世界书镜像同步完成");
-                } catch (error) {
-                    console.error("❌ [分批总结] 世界书同步失败:", error);
-                }
-            }
-
-            // 等待最后一批数据的世界书同步防抖结束
-            if (successCount > 0 && !window.Gaigai.stopBatch) {
-                console.log('⏳ [分批结束] 正在等待最后一次世界书同步完成 (11s = 5s防抖 + 5s缓冲 + 1s余量)...');
-                await new Promise(r => setTimeout(r, 11000));
             }
 
             // ✅ 任务结束：重置状态
