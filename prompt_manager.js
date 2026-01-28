@@ -230,6 +230,151 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
 (正文剧情内容及所有其他的内容...)
 <Memory><!-- --></Memory>`;
 
+    // ✨ 实时填表提示词 - 精简版（不包含表8 - 关于我）
+    const DEFAULT_TABLE_PROMPT_NO_TABLE8 = `<!-- 🛑 第一部分:系统核心协议 -->
+🔴🔴🔴 记忆表格填表指南 🔴🔴🔴
+
+【身份定义】
+你必须在每次回复内容的最末尾按照以下规则输出<Memory>格式的填表内容，严禁遗漏。
+
+【最高级禁令:严禁主观臆断与抽象描述】
+1.🛑绝对禁止心理分析:严禁使用"宣示主权"、"宣示占有欲"、"占有欲爆发"、"作为猎手/猎物的计划"、"试图控制"等涉及心理动机、潜意识或社会学定义的词汇.
+2.🛑绝对禁止抽象定性:严禁使用"暧昧的气氛"、"微妙的张力"、"权力的博弈"等文学性修饰.
+3.✅必须只记录客观行为:
+-错误:"A向B宣示主权"
+-正确:"A搂住B的腰,并对C说B是他的女友"
+-错误:"A像猎手一样盯着猎物"
+-正确:"A长时间注视B,没有眨眼,并在B移动时紧随其后"
+4.违反此条将导致记录被视为无效垃圾数据.
+
+【强制时间线处理】
+🛑 严禁只记录最近的剧情而遗漏早期剧情！
+🛑 必须严格按照剧情发生的时间顺序记录。
+
+【核心记录原则：全景与实体】
+1. 👁️ [全景目击原则]：在记录[事件概要]时，必须显式列出所有在场人员（包括旁观者或群众）。
+   - 错误：A与B争吵。
+   - 正确：A与B争吵，C与D在旁围观，周围有大量吃瓜群众。
+2. 💎 [信息实体化原则]：严禁使用模糊指代词（如"真相"、"秘密"、"把柄"、"那件事"）。必须将指代内容**具象化**。
+   - 错误：A告诉了B真相。
+   - 正确：A告诉B真相(当年是C毒害了父亲)。
+   - 错误：A用把柄威胁B。
+   - 正确：A用把柄(B的儿子挪用公款)威胁B。
+
+<!-- 📝 第二部分:填表细则 -->
+
+【核心逻辑判定流程】(每次填表前必须在内心执行此流程)
+
+👉判定1:主线剧情(表0)
+-检查表格最后一行(索引0)的[日期]列,仅当跨天时,同一天的完结时间只有确定剧情跨天了，才可更新,事件概要的时间节点区间不可做为结束时间.
+-❓新剧情的日期==最后一行的日期？
+✅是->必须使用updateRow(0,0,{3:"新事件"}).
+❌严禁只更新事件列而让日期列留空.
+❌严禁认为"事件概要里写了时间"就等于"时间列有了",必须显式写入{1:"HH:mm"}.
+⚠️否->仅日期跨天或过往记忆数据库无任何记录时,才允许使用insertRow(0,...),同一天已有数据的内容必须使用updateRow更新内容.
+⚠️强制完整性检查:若当前行(第0行)的[日期]或[开始时间]为空(例如之前被总结清空了),必须在本次updateRow中将它们一并补全！
+
+👉判定2:支线追踪(表1)
+-检查当前是否有正在进行的、同主题的支线.
+❌错误做法:因为换了个地点(如餐厅->画廊),就新建一行"画廊剧情".
+✅正确做法:找到【特权阶级的日常】或【某某人的委托】这一行,使用updateRow更新它的[事件追踪]列.
+⚠️只有出现了完全无关的新势力或新长期任务,才允许insertRow.
+
+【绝对去重与更新规则】
+对于表2(状态)、表3(档案)、表4(关系)、表5(设定)、表6(物品),必须严格遵守"唯一主键"原则！
+在生成指令前,必须先扫描【当前表格状态】中是否已存在该对象.
+
+1.👤人物档案(表3)&角色状态(表2):
+-主键:[角色名](第0列).
+-规则:如果"张三"已存在于表格第N行,无论他发生了什么变动(地址变了、受伤了),**严禁**使用insertRow新建一行！
+-操作:必须使用updateRow(表格ID,N,{列ID:"新内容"})直接覆盖旧内容.
+-示例:张三从"家"移动到"医院".
+❌错误:insertRow(3,{0:"张三",3:"医院"...})
+✅正确:updateRow(3,5,{3:"医院"})<--假设张三在第5行,直接修改第3列地点
+
+2.📦物品追踪(表6):
+-主键:[物品名称](第0列).
+-规则:神器/关键道具在表中必须是唯一的,必须记录道具道具的首次出场时间含年月日,若道具进行转移、赠予、丢失、毁坏必须更新该物品状态发生的时间.
+-操作:当物品发生转移时,找到该物品所在的行索引N,使用updateRow更新[当前位置]和[持有者].
+
+3.❤️人物关系(表4):
+-主键:[角色A]+[角色B]的组合.
+-规则:两人的关系只有一种状态.如果关系改变(如:朋友→恋人),找到对应的行,覆盖更新[关系描述]列.
+
+【各表格记录规则(严格遵守)】
+- 主线剧情(表0):仅记录主角与{{user}}直接产生互动的剧情或主角/{{user}}的单人主线剧情.格式:HH:mm[地点]角色名行为描述(客观记录事件/互动/结果)
+- 支线追踪(表1):仅记录NPC独立情节、{{user}}/{{char}}与NPC的剧情互动,严禁将这些内容记录到主线剧情.状态必须明确(进行中/已完成/已失败).格式:HH:mm[地点]角色名行为描述(客观记录事件/互动/结果)
+- 角色状态:仅记录角色自由或身体的重大状态变化(如死亡、残废、囚禁、失明、失忆及恢复).若角色已在表中,仅在同一行更新.
+- 人物档案:记录新登场角色.若角色已存在表格,根据剧情的发展和时间的推移仅使用updateRow更新其[年龄(根据初始设定及剧情时间推移更新年龄,无确定年龄根据首次出场或人物背景关系推测并确定年龄)]、[身份(该身份仅记录社会身份,如职业)]、[地点]或[性格/备注].
+- 人物关系:仅记录角色间的决定性关系转换(如朋友→敌人、恋人→前任、陌生人→熟识).[角色A]与[角色B]仅作为组合锚点,无视先后顺序(即"A+B"等同于"B+A"),严禁重复建行！若该组合已存在,请直接更新.在填写[关系描述]和[情感态度]时,必须明确主语并包含双向视角(例如:"A视B为挚爱,但B对A冷淡"或"互相仇视"),确保关系脉络清晰.
+- 世界设定:仅记录System基础设定中完全不存在的全新概念.
+- 物品追踪:仅记录具有唯一性、剧情关键性或特殊纪念意义的道具(如:神器、钥匙、定情信物、重要礼物).严禁记录普通消耗品(食物/金钱)或环境杂物.物品必须唯一！若物品已在表中,无论它流转到哪里,都必须updateRow更新其[持有者]和[当前位置],严禁新建一行！
+- 约定:仅记录双方明确达成共识的严肃承诺或誓言.必须包含{{user}}的主动确认.严禁记录单方面的命令、胁迫、日常行程安排或临时口头指令.
+
+<!-- 📊 第三部分:动态引用与示例  -->
+
+【核心指令】
+1.每次回复的最末尾（所有内容和标签之后），必须输出 <Memory> 标签
+2.<Memory> 标签必须在最后一行，不能有任何内容在它后面
+3.即使本次没有重要剧情，也必须输出（至少更新时间或状态）
+4.严禁使用Markdown 代码块、JSON 格式、XML标签等不符合语法示例和正确格式的内容。
+
+【唯一正确格式】
+<Memory><!-- --></Memory>
+
+⚠️ 必须使用 <Memory> 标签！
+⚠️ 必须用<!-- -->包裹！
+⚠️ 必须使用数字索引（如 0, 1, 3），严禁使用英文单词（如 date, time）！
+⚠️【执行顺序原则】系统将严格按照你输出的顺序执行指令！
+- 若要【修改旧行】并【新增新行】：必须先输出 updateRow(旧索引...)，最后输出 insertRow(0...)。因为 insertRow 会导致旧行索引后移。
+- 若要【新增新行】并【补充该行内容】：必须先 insertRow(0...)，然后 updateRow(0...)。
+- 示例：如果你想插入新事件并立即更新它，顺序为：insertRow(0, {...}) → updateRow(0, 0, {...})
+⚠️【增量更新原则】：只输出本次对话产生的【新变化】。严禁重复输出已存在的旧记录！严禁修改非本次剧情导致的过往数据！
+
+【指令语法示例】
+
+✅ 第一天开始（表格为空，新增第0行）:
+<Memory><!-- insertRow(0, {0: "2024年3月15日", 1: "上午(08:30)", 2: "", 3: "在村庄接受长老委托，前往迷雾森林寻找失落宝石", 4: "进行中"})--></Memory>
+
+✅ 同一天推进（只写新事件，系统会自动追加到列3）:
+<Memory><!-- updateRow(0, 0, {3: "在迷雾森林遭遇神秘商人艾莉娅，获得线索：宝石在古神殿深处"})--></Memory>
+
+✅ 继续推进（再次追加新事件）:
+<Memory><!-- updateRow(0, 0, {3: "在森林露营休息"})--></Memory>
+
+✅ 同一天完结（只需填写完结时间和状态）:
+<Memory><!-- updateRow(0, 0, {2: "晚上(22:00)", 4: "暂停"})--></Memory>
+
+✅ 跨天处理（完结前一天 + 新增第二天）:
+<Memory><!-- updateRow(0, 0, {2: "深夜(23:50)", 4: "已完成"})
+insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿继续探索，寻找宝石线索", 4: "进行中"})--></Memory>
+
+✅ 新增支线:
+<Memory><!-- insertRow(1, {0: "进行中", 1: "艾莉娅的委托", 2: "2024年3月15日·下午(14:00)", 3: "", 4: "艾莉娅请求帮忙寻找失散的妹妹", 5: "艾莉娅"})--></Memory>
+
+✅ 新增人物档案:
+<Memory><!-- insertRow(3, {0: "艾莉娅", 1: "23", 2: "神秘商人", 3: "迷雾森林", 4: "神秘冷静，知识渊博", 5: "有一个失散的妹妹，擅长占卜"})--></Memory>
+
+✅ 新增人物关系:
+<Memory><!-- insertRow(4, {0: "{{user}}", 1: "艾莉娅", 2: "委托人与受托者", 3: "中立友好，略带神秘感"})--></Memory>
+
+✅ 新增约定:
+<Memory><!-- insertRow(7, {0: "2024年3月18日前", 1: "找到失落宝石交给长老", 2: "长老"})--></Memory>
+
+✅ 物品流转（如物品已存在，则更新持有者）：
+<Memory><!-- updateRow(6, 0, {2: "艾莉娅的背包", 3: "艾莉娅", 4: "已获得"})--></Memory>
+
+【表格索引(严格按照表示索引顺序填写内容)】
+{{TABLE_DEFINITIONS}}
+
+【当前表格状态参考】
+请仔细阅读下方的"当前表格状态"，找到对应行的索引(Index)。
+不要盲目新增！优先 Update！
+
+【输出示例】
+(正文剧情内容及所有其他的内容...)
+<Memory><!-- --></Memory>`;
+
     // ----- 2. 表格总结提示词 -----
     const DEFAULT_SUM_TABLE = `--------------------------------------
 🛑 [表格数据读取结束]
@@ -1067,16 +1212,16 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             return profilesData.profiles['default']?.data[type];
         }
 
-        // ✨ 特殊处理：批量填表提示词根据【关于我】开关动态选择版本
-        if (type === 'backfillPrompt') {
+        // ✨ 特殊处理：实时填表提示词根据【关于我】开关动态选择版本
+        if (type === 'tablePrompt') {
             const config = localStorage.getItem('gg_config');
             const enableUserInfoTable = config ? JSON.parse(config).enableUserInfoTable : false;
 
             if (!enableUserInfoTable) {
-                console.log('🔒 [PromptManager] 【关于我】开关已关闭，使用精简版批量填表提示词（不含表8）');
-                return DEFAULT_BACKFILL_PROMPT_NO_TABLE8;
+                console.log('🔒 [PromptManager] 【关于我】开关已关闭，使用精简版实时填表提示词（不含表8）');
+                return DEFAULT_TABLE_PROMPT_NO_TABLE8;
             } else {
-                console.log('✅ [PromptManager] 【关于我】开关已开启，使用完整版批量填表提示词（含表8）');
+                console.log('✅ [PromptManager] 【关于我】开关已开启，使用完整版实时填表提示词（含表8）');
             }
         }
 
@@ -1391,12 +1536,23 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             </div>
 
             <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.2);">
-                <div style="margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight: 600;">📋 实时填表提示词</span>
-                    <span style="font-size:10px; opacity:0.6;">(更新前手动保存已修改过的提示词，避免丢失)</span>
+                <div style="margin-bottom: 8px; font-weight: 600; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📋 实时填表提示词</span>
+
+                    <div style="display: flex; background: rgba(127, 127, 127, 0.15); padding: 4px; border-radius: 8px; gap: 4px;">
+                        <label style="flex: 1; text-align: center; justify-content: center; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; color: ${window.Gaigai.ui.tc}; opacity: 0.7; display: flex; align-items: center; border: 1px solid transparent;" id="gg_tab_label_realtime_full">
+                            <input type="radio" name="pmt-realtime-type" value="realtime-full" checked>
+                            📋 含表8
+                        </label>
+                        <label style="flex: 1; text-align: center; justify-content: center; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.2s; color: ${window.Gaigai.ui.tc}; opacity: 0.7; display: flex; align-items: center; border: 1px solid transparent;" id="gg_tab_label_realtime_lite">
+                            <input type="radio" name="pmt-realtime-type" value="realtime-lite">
+                            📋 无表8
+                        </label>
+                    </div>
                 </div>
 
-                <textarea id="gg_pmt_table" style="width:100%; height:150px; padding:10px; border:1px solid rgba(0,0,0,0.1); border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; background:rgba(255,255,255,0.5); box-sizing: border-box; margin-bottom: 12px;">${window.Gaigai.esc(currentData.tablePrompt !== undefined ? currentData.tablePrompt : DEFAULT_TABLE_PROMPT)}</textarea>
+                <textarea id="gg_pmt_table" style="width:100%; height:150px; padding:10px; border:1px solid rgba(0,0,0,0.1); border-radius:6px; font-size:12px; font-family:monospace; resize:vertical; background:rgba(255,255,255,0.5); box-sizing: border-box;">${window.Gaigai.esc(currentData.tablePrompt !== undefined ? currentData.tablePrompt : DEFAULT_TABLE_PROMPT)}</textarea>
+                <div style="font-size:10px; opacity:0.5; margin-top:4px; text-align:right;" id="gg_pmt_table_desc">当前编辑：实时填表提示词（完整版，包含表8 - 关于我）</div>
             </div>
 
             <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.2);">
@@ -1446,7 +1602,11 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             let tempChatPmt = currentData.summaryPromptChat !== undefined ? currentData.summaryPromptChat : DEFAULT_SUM_CHAT;
             let tempBackfillPmt = currentData.backfillPrompt !== undefined ? currentData.backfillPrompt : DEFAULT_BACKFILL_PROMPT;
 
-            // ✨ 新增：精简版批量填表提示词（不含表8）
+            // ✨ 实时填表提示词（两个版本）
+            let tempRealtimePmtFull = currentData.tablePrompt !== undefined ? currentData.tablePrompt : DEFAULT_TABLE_PROMPT;
+            let tempRealtimePmtLite = DEFAULT_TABLE_PROMPT_NO_TABLE8;
+
+            // ✨ 批量填表提示词（两个版本）
             let tempBackfillPmtNoTable8 = DEFAULT_BACKFILL_PROMPT_NO_TABLE8;
 
             // 预设切换
@@ -1568,7 +1728,44 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
                 });
             }
 
-            // 切换提示词标签
+            // ✨ 实时填表提示词标签切换
+            $('input[name="pmt-realtime-type"]').on('change', function() {
+                const type = $(this).val();
+                const currentVal = $('#gg_pmt_table').val();
+                const prevType = $('input[name="pmt-realtime-type"]').not(this).filter((i, el) => {
+                    return $(el).data('was-checked-realtime');
+                }).val() || 'realtime-full';
+
+                // 保存当前内容
+                if (prevType === 'realtime-full') tempRealtimePmtFull = currentVal;
+                else if (prevType === 'realtime-lite') tempRealtimePmtLite = currentVal;
+
+                // 加载新内容
+                if (type === 'realtime-full') {
+                    $('#gg_pmt_table').val(tempRealtimePmtFull);
+                    const statusIcon = enableUserInfoTable ? '✅ 当前使用' : '⚠️ 未使用';
+                    $('#gg_pmt_table_desc').html(`当前编辑：实时填表提示词（完整版，包含表8 - 关于我）<br><span style="color: ${enableUserInfoTable ? '#28a745' : '#ffc107'};">${statusIcon}</span>`);
+                } else if (type === 'realtime-lite') {
+                    $('#gg_pmt_table').val(tempRealtimePmtLite);
+                    const statusIcon = !enableUserInfoTable ? '✅ 当前使用' : '⚠️ 未使用';
+                    $('#gg_pmt_table_desc').html(`当前编辑：实时填表提示词（精简版，不包含表8 - 关于我）<br><span style="color: ${!enableUserInfoTable ? '#28a745' : '#ffc107'};">${statusIcon}</span>`);
+                }
+
+                $('input[name="pmt-realtime-type"]').data('was-checked-realtime', false);
+                $(this).data('was-checked-realtime', true);
+            });
+
+            // ✨ 初始化：标记默认选中的实时填表标签
+            $('input[name="pmt-realtime-type"]:checked').data('was-checked-realtime', true);
+
+            // 实时填表文本框失去焦点时同步
+            $('#gg_pmt_table').on('input blur', function() {
+                const type = $('input[name="pmt-realtime-type"]:checked').val();
+                if (type === 'realtime-full') tempRealtimePmtFull = $(this).val();
+                else if (type === 'realtime-lite') tempRealtimePmtLite = $(this).val();
+            });
+
+            // 切换总结/批量提示词标签
             $('input[name="pmt-sum-type"]').on('change', function() {
                 const type = $(this).val();
                 const currentVal = $('#gg_pmt_summary').val();
@@ -1623,10 +1820,11 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
             // 保存按钮
             $('#gg_save_pmt').on('click', async function() {
                 $('#gg_pmt_summary').trigger('blur');
+                $('#gg_pmt_table').trigger('blur');
 
                 // 更新当前预设的数据
                 currentData.nsfwPrompt = $('#gg_pmt_nsfw').val();
-                currentData.tablePrompt = $('#gg_pmt_table').val();
+                currentData.tablePrompt = tempRealtimePmtFull;  // 只保存完整版
                 currentData.summaryPromptTable = tempTablePmt;
                 currentData.summaryPromptChat = tempChatPmt;
                 currentData.backfillPrompt = tempBackfillPmt;
@@ -1719,7 +1917,15 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
                         }
                         if ($('#gg_rst_table').is(':checked')) {
                             currentData.tablePrompt = DEFAULT_TABLE_PROMPT;
-                            $('#gg_pmt_table').val(DEFAULT_TABLE_PROMPT);
+                            tempRealtimePmtFull = DEFAULT_TABLE_PROMPT;
+                            tempRealtimePmtLite = DEFAULT_TABLE_PROMPT_NO_TABLE8;
+                            // 更新当前显示的文本框
+                            const currentRealtimeType = $('input[name="pmt-realtime-type"]:checked').val();
+                            if (currentRealtimeType === 'realtime-full') {
+                                $('#gg_pmt_table').val(DEFAULT_TABLE_PROMPT);
+                            } else {
+                                $('#gg_pmt_table').val(DEFAULT_TABLE_PROMPT_NO_TABLE8);
+                            }
                         }
                         if ($('#gg_rst_sum-table').is(':checked')) {
                             currentData.summaryPromptTable = DEFAULT_SUM_TABLE;
@@ -2637,11 +2843,12 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
 
         // 默认提示词常量（供外部引用）
         DEFAULT_TABLE_PROMPT: DEFAULT_TABLE_PROMPT,
+        DEFAULT_TABLE_PROMPT_NO_TABLE8: DEFAULT_TABLE_PROMPT_NO_TABLE8,  // ✨ 精简版实时填表（不含表8）
         DEFAULT_SUM_TABLE: DEFAULT_SUM_TABLE,
         DEFAULT_SUM_CHAT: DEFAULT_SUM_CHAT,
         CHAT_HISTORY_END_MARKER: CHAT_HISTORY_END_MARKER,
         DEFAULT_BACKFILL_PROMPT: DEFAULT_BACKFILL_PROMPT,
-        DEFAULT_BACKFILL_PROMPT_NO_TABLE8: DEFAULT_BACKFILL_PROMPT_NO_TABLE8,  // ✨ 精简版（不含表8）
+        DEFAULT_BACKFILL_PROMPT_NO_TABLE8: DEFAULT_BACKFILL_PROMPT_NO_TABLE8,  // ✨ 精简版批量填表（不含表8）
         NSFW_UNLOCK: NSFW_UNLOCK,
 
         // 版本信息
