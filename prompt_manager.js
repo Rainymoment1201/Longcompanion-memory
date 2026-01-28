@@ -1516,9 +1516,14 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
 
         const h = `
             <style>
-                /* 隐藏原生单选按钮 */
+                /* 隐藏原生单选按钮（使用绝对定位和opacity，保持可访问性） */
                 input[name="pmt-sum-type"] {
-                    display: none;
+                    position: absolute;
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                    margin: 0;
+                    padding: 0;
                 }
 
                 /* label的基础样式会在内联样式中定义 */
