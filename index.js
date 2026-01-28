@@ -34,7 +34,7 @@
     const CK = 'gg_config';            // 通用配置存储键
     const CWK = 'gg_col_widths';       // 列宽存储键
     const SMK = 'gg_summarized';       // 已总结行标记存储键
-    const UIK = 'gg_user_info';        // 【关于用户】全局存储键
+    const UIK = 'gg_user_info';        // 【关于我】全局存储键
     const REPO_PATH = 'gaigai315/ST-Memory-Context';  // GitHub仓库路径
 
     // ===== UI主题配置 =====
@@ -68,7 +68,7 @@
         hideTag: true,
         filterHistory: true,
         cloudSync: true,
-        persistUserInfo: false,        // ❌ 默认关闭【关于用户】跨会话记忆
+        persistUserInfo: false,        // ❌ 默认关闭【关于我】跨会话记忆
         // ==================== 独立向量检索配置 ====================
         vectorEnabled: false,          // ❌ 默认关闭独立向量检索
         vectorProvider: 'openai',      // 向量服务提供商
@@ -124,7 +124,7 @@
         { n: '世界设定', c: ['#设定名', '#类型', '#详细说明', '#影响范围'] },
         { n: '物品追踪', c: ['#物品名称', '物品描述', '#当前位置', '#持有者', '#状态', '#重要程度', '#备注'] },
         { n: '约定', c: ['#约定时间', '约定内容', '#核心角色'] },
-        { n: '关于用户', c: ['#信息类型', '#记录时间', '具体内容', '#相关程度'] },
+        { n: '关于我', c: ['#信息类型', '#记录时间', '具体内容', '#相关程度'] },
         { n: '记忆总结', c: ['#表格类型', '总结内容'] }
     ];
 
@@ -1346,7 +1346,7 @@
             try {
                 localStorage.setItem(`${SK}_${id}`, JSON.stringify(data));
 
-                // ✨ 保存【关于用户】到全局存储（如果开启）
+                // ✨ 保存【关于我】到全局存储（如果开启）
                 this.saveUserInfoGlobal();
 
                 // 🔥 [优化版] 自动备份机制：创建时间戳备份供"恢复数据"功能使用
@@ -1486,7 +1486,7 @@
 
                 console.log(`🔄 [会话切换] ID: ${id}，已重置所有状态`);
 
-                // ✨ 加载【关于用户】全局记忆（如果开启）
+                // ✨ 加载【关于我】全局记忆（如果开启）
                 this.loadUserInfoGlobal();
             }
 
@@ -1662,17 +1662,17 @@
 
         ctx() { return (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) ? SillyTavern.getContext() : null; }
 
-        // ==================== 【关于用户】全局记忆管理 ====================
+        // ==================== 【关于我】全局记忆管理 ====================
 
         /**
-         * 保存【关于用户】表格数据到全局存储
+         * 保存【关于我】表格数据到全局存储
          */
         saveUserInfoGlobal() {
             if (!C.persistUserInfo) return; // 未开启跨会话记忆，不保存
 
-            const userInfoSheet = this.s[8]; // 第8号表格是【关于用户】
+            const userInfoSheet = this.s[8]; // 第8号表格是【关于我】
             if (!userInfoSheet || userInfoSheet.r.length === 0) {
-                console.log('📝 [关于用户] 表格为空，跳过全局保存');
+                console.log('📝 [关于我] 表格为空，跳过全局保存');
                 return;
             }
 
@@ -1682,60 +1682,60 @@
                     lastUpdate: new Date().toISOString()
                 };
                 localStorage.setItem(UIK, JSON.stringify(data));
-                console.log(`✅ [关于用户] 已保存到全局存储 (${userInfoSheet.r.length} 行)`);
+                console.log(`✅ [关于我] 已保存到全局存储 (${userInfoSheet.r.length} 行)`);
             } catch (e) {
-                console.error('❌ [关于用户] 保存失败:', e);
+                console.error('❌ [关于我] 保存失败:', e);
             }
         }
 
         /**
-         * 从全局存储加载【关于用户】表格数据
+         * 从全局存储加载【关于我】表格数据
          */
         loadUserInfoGlobal() {
             if (!C.persistUserInfo) {
-                console.log('📝 [关于用户] 跨会话记忆已关闭，使用当前会话数据');
+                console.log('📝 [关于我] 跨会话记忆已关闭，使用当前会话数据');
                 return;
             }
 
             try {
                 const stored = localStorage.getItem(UIK);
                 if (!stored) {
-                    console.log('📝 [关于用户] 无全局数据');
+                    console.log('📝 [关于我] 无全局数据');
                     return;
                 }
 
                 const data = JSON.parse(stored);
-                const userInfoSheet = this.s[8]; // 第8号表格是【关于用户】
+                const userInfoSheet = this.s[8]; // 第8号表格是【关于我】
 
                 if (data.rows && Array.isArray(data.rows) && data.rows.length > 0) {
                     userInfoSheet.r = data.rows;
-                    console.log(`✅ [关于用户] 已从全局存储加载 (${data.rows.length} 行，最后更新: ${data.lastUpdate})`);
+                    console.log(`✅ [关于我] 已从全局存储加载 (${data.rows.length} 行，最后更新: ${data.lastUpdate})`);
                 }
             } catch (e) {
-                console.error('❌ [关于用户] 加载失败:', e);
+                console.error('❌ [关于我] 加载失败:', e);
             }
         }
 
         /**
-         * 清除【关于用户】表格数据（仅当前会话）
+         * 清除【关于我】表格数据（仅当前会话）
          */
         clearUserInfoLocal() {
             const userInfoSheet = this.s[8];
             if (userInfoSheet) {
                 userInfoSheet.r = [];
-                console.log('🗑️ [关于用户] 当前会话数据已清空');
+                console.log('🗑️ [关于我] 当前会话数据已清空');
             }
         }
 
         /**
-         * 清除【关于用户】全局存储
+         * 清除【关于我】全局存储
          */
         clearUserInfoGlobal() {
             try {
                 localStorage.removeItem(UIK);
-                console.log('🗑️ [关于用户] 全局数据已清空');
+                console.log('🗑️ [关于我] 全局数据已清空');
             } catch (e) {
-                console.error('❌ [关于用户] 清除全局数据失败:', e);
+                console.error('❌ [关于我] 清除全局数据失败:', e);
             }
         }
 
@@ -1744,10 +1744,10 @@
         pmt() {
             let result = '';
 
-            // ✨ 优先注入【关于用户】信息（如果有）
-            const userInfoSheet = this.s[8]; // 第8号表格是【关于用户】
+            // ✨ 优先注入【关于我】信息（如果有）
+            const userInfoSheet = this.s[8]; // 第8号表格是【关于我】
             if (userInfoSheet && userInfoSheet.r.length > 0) {
-                result += '=== 👤 关于用户（重要！请优先记住这些信息） ===\n\n';
+                result += '=== 👤 关于我（重要！请优先记住这些信息） ===\n\n';
                 result += userInfoSheet.txt(8);
                 result += '\n=== 用户信息结束 ===\n\n';
             }
@@ -5118,9 +5118,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             const $btnHide = $('<button>', { text: '🙈 全部隐藏 (绿色)' })
                 .attr('style', btnStyle)
                 .on('click', () => {
-                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    // ✅ 表8（关于我）是核心记忆，不允许隐藏
                     if (ti === 8) {
-                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
+                        customAlert('⚠️ 【关于我】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
                         return;
                     }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
@@ -6418,9 +6418,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                     html: isCurrentHidden ? '👁️ 显示当前页 (第' + currentPageNum + '篇)' : '🙈 隐藏当前页 (第' + currentPageNum + '篇)',
                     css: btnCss
                 }).on('click', () => {
-                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    // ✅ 表8（关于我）是核心记忆，不允许隐藏
                     if (ti === 8) {
-                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        customAlert('⚠️ 【关于我】是核心记忆，不可隐藏', '核心记忆');
                         return;
                     }
                     toggleRow(ti, currentBookPage);
@@ -6432,9 +6432,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                     html: '📚 将所有页面设为【隐藏/已归档】',
                     css: btnCss
                 }).on('click', () => {
-                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    // ✅ 表8（关于我）是核心记忆，不允许隐藏
                     if (ti === 8) {
-                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        customAlert('⚠️ 【关于我】是核心记忆，不可隐藏', '核心记忆');
                         return;
                     }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
@@ -6502,9 +6502,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 }
 
                 function processRange(str) {
-                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    // ✅ 表8（关于我）是核心记忆，不允许隐藏
                     if (ti === 8) {
-                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        customAlert('⚠️ 【关于我】是核心记忆，不可隐藏', '核心记忆');
                         return;
                     }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
@@ -6644,9 +6644,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                         color: '#fff'
                     }
                 }).on('click', () => {
-                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    // ✅ 表8（关于我）是核心记忆，不允许隐藏
                     if (ti === 8) {
-                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
+                        customAlert('⚠️ 【关于我】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
                         return;
                     }
                     // 将所有行索引加入隐藏列表
@@ -9337,14 +9337,14 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 (注:勾选后,总结表中已被向量化的内容将自动标记为隐藏/绿色)
             </div>
 
-            <!-- ✨✨✨ 新增：【关于用户】跨会话记忆 ✨✨✨ -->
+            <!-- ✨✨✨ 新增：【关于我】跨会话记忆 ✨✨✨ -->
             <div style="margin-top: 12px; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 12px;">
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight: 600;">
                     <input type="checkbox" id="gg_c_persist_user_info" ${C.persistUserInfo ? 'checked' : ''}>
-                    <span>👤 启用【关于用户】跨会话记忆</span>
+                    <span>👤 启用【关于我】跨会话记忆</span>
                 </label>
                 <div style="font-size: 10px; color: #666; margin-top: 6px; margin-left: 22px; line-height: 1.6;">
-                    开启后,【关于用户】表格的内容将在所有对话间共享。<br>
+                    开启后,【关于我】表格的内容将在所有对话间共享。<br>
                     <strong>• 开启：</strong>切换对话时会自动加载之前记录的用户信息<br>
                     <strong>• 关闭：</strong>每个对话独立记录用户信息,互不影响
                 </div>
@@ -9836,24 +9836,24 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             $('#gg_open_api').on('click', () => navTo('AI总结配置', shapi));
             $('#gg_open_pmt').on('click', () => navTo('提示词管理', window.Gaigai.PromptManager.showPromptManager));
 
-            // ✨✨✨ 【关于用户】按钮事件绑定 ✨✨✨
+            // ✨✨✨ 【关于我】按钮事件绑定 ✨✨✨
             $('#gg_btn_clear_user_info_local').off('click').on('click', async function () {
-                if (!await customConfirm('确定清空当前会话的【关于用户】数据吗？\n\n⚠️ 此操作仅清空当前对话，不影响全局记忆。\n\n如果开启了跨会话记忆，切换对话后仍会加载全局数据。', '清空当前会话')) return;
+                if (!await customConfirm('确定清空当前会话的【关于我】数据吗？\n\n⚠️ 此操作仅清空当前对话，不影响全局记忆。\n\n如果开启了跨会话记忆，切换对话后仍会加载全局数据。', '清空当前会话')) return;
 
                 m.clearUserInfoLocal();
                 m.save();
                 refreshTable();
-                await customAlert('✅ 当前会话的【关于用户】数据已清空。', '清空成功');
+                await customAlert('✅ 当前会话的【关于我】数据已清空。', '清空成功');
             });
 
             $('#gg_btn_clear_user_info_global').off('click').on('click', async function () {
-                if (!await customConfirm('⚠️ 危险操作 ⚠️\n\n确定清空全局的【关于用户】数据吗？\n\n这将删除所有对话共享的用户信息记忆！\n\n建议：如果只想清空当前对话，请使用左侧的"清空当前会话"按钮。', '清空全局数据')) return;
+                if (!await customConfirm('⚠️ 危险操作 ⚠️\n\n确定清空全局的【关于我】数据吗？\n\n这将删除所有对话共享的用户信息记忆！\n\n建议：如果只想清空当前对话，请使用左侧的"清空当前会话"按钮。', '清空全局数据')) return;
 
                 m.clearUserInfoGlobal();
                 m.clearUserInfoLocal();
                 m.save();
                 refreshTable();
-                await customAlert('✅ 全局【关于用户】数据已清空。\n\n所有对话将重新开始记录用户信息。', '清空成功');
+                await customAlert('✅ 全局【关于我】数据已清空。\n\n所有对话将重新开始记录用户信息。', '清空成功');
             });
 
             // ==================== 向量化设置按钮 ====================
