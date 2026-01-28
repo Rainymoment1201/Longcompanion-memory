@@ -2824,9 +2824,22 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         // 收集被修改的表格索引
         const modifiedTables = new Set();
 
+        // 🟢 加载绿色（已总结）行标记
+        const summarizedRowsData = summarizedRows || {};
+
         cs.forEach(cm => {
             const sh = m.get(cm.ti);
             if (!sh) return;
+
+            // 🛡️ 绿色行保护：拦截对已总结行的修改和删除操作
+            if ((cm.t === 'update' || cm.t === 'delete') && cm.ri !== null) {
+                const greenRows = summarizedRowsData[cm.ti] || [];
+                if (greenRows.includes(cm.ri)) {
+                    console.warn(`🛡️ [绿色行保护] 拦截对表${cm.ti}行${cm.ri}的${cm.t === 'update' ? '修改' : '删除'}操作（该行已总结，受保护）`);
+                    return; // 跳过这条指令
+                }
+            }
+
             if (cm.t === 'update' && cm.ri !== null) sh.upd(cm.ri, cm.d);
             if (cm.t === 'insert') sh.ins(cm.d);
             if (cm.t === 'delete' && cm.ri !== null) sh.del(cm.ri);
