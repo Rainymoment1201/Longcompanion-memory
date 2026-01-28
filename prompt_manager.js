@@ -1762,6 +1762,7 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
 
                 // 更新当前预设的数据
                 currentData.nsfwPrompt = $('#gg_pmt_nsfw').val();
+                currentData.tablePrompt = currentData.tablePrompt || DEFAULT_TABLE_PROMPT; // 保留原有的 tablePrompt
                 currentData.summaryPromptTable = tempTablePmt;
                 currentData.summaryPromptChat = tempChatPmt;
                 currentData.backfillPrompt = tempBackfillPmt;
