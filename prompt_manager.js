@@ -1509,6 +1509,9 @@ insertRow(0, {0: "2024年3月16日", 1: "凌晨(00:10)", 2: "", 3: "在古神殿
     function showPromptManager() {
         const profilesData = getProfilesData() || initProfiles();
 
+        // 获取当前角色名用于绑定功能
+        const charName = getCurrentCharacterName();
+
         // ✅ 始终使用默认预设，不再支持切换
         const currentProfileId = 'default';
         const currentProfile = profilesData.profiles[currentProfileId];
