@@ -2608,7 +2608,27 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
      * @param {string} content - 原始文本
      * @returns {string} - 处理后的文本
      */
-    
+    function filterContentByTags(content) {
+        if (!content || typeof content !== 'string') return content;
+
+        // 移除常见的用户自定义标签（黑名单）
+        // 例如：<think>、<thought>、<内心独白> 等
+        const blacklistTags = [
+            /<think>[\s\S]*?<\/think>/gi,
+            /<thought>[\s\S]*?<\/thought>/gi,
+            /<内心独白>[\s\S]*?<\/内心独白>/gi,
+            /<旁白>[\s\S]*?<\/旁白>/gi,
+            /<OOC>[\s\S]*?<\/OOC>/gi
+        ];
+
+        let filtered = content;
+        blacklistTags.forEach(regex => {
+            filtered = filtered.replace(regex, '');
+        });
+
+        return filtered.trim();
+    }
+
 
     // ✅✅✅ 智能解析器 v5.0 (终极融合版：脚本 + ToolCall + Gemini数组)
     function prs(tx) {
@@ -11806,7 +11826,8 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         callIndependentAPI,
         callTavernAPI,
         prs,
-        exe
+        exe,
+        filterContentByTags  // 🔧 添加内容过滤函数，供 backfill_manager 和 summary_manager 使用
     };
 
     console.log('✅ window.Gaigai 已挂载', window.Gaigai);
