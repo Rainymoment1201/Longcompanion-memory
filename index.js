@@ -4588,11 +4588,9 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
 
         const tbls = ss.map((s, i) => gtb(s, i)).join('');
 
-        const cleanVer = V.replace(/^v+/i, '');
         const titleHtml = `
         <div class="g-title-box">
             <span>记忆表格</span>
-            <span class="g-ver-tag">v${cleanVer}</span>
             <i id="gai-about-btn" class="fa-solid fa-circle-info"
                style="margin-left:6px; cursor:pointer; opacity:0.8; font-size:14px; transition:all 0.2s;"
                title="使用说明 & 检查更新"></i>
