@@ -5118,6 +5118,11 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             const $btnHide = $('<button>', { text: '🙈 全部隐藏 (绿色)' })
                 .attr('style', btnStyle)
                 .on('click', () => {
+                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    if (ti === 8) {
+                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
+                        return;
+                    }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
                     // 将所有行索引加入列表
                     summarizedRows[ti] = Array.from({ length: sh.r.length }, (_, k) => k);
@@ -6413,6 +6418,11 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                     html: isCurrentHidden ? '👁️ 显示当前页 (第' + currentPageNum + '篇)' : '🙈 隐藏当前页 (第' + currentPageNum + '篇)',
                     css: btnCss
                 }).on('click', () => {
+                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    if (ti === 8) {
+                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        return;
+                    }
                     toggleRow(ti, currentBookPage);
                     finish(`第 ${currentPageNum} 篇状态已切换`);
                 });
@@ -6422,6 +6432,11 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                     html: '📚 将所有页面设为【隐藏/已归档】',
                     css: btnCss
                 }).on('click', () => {
+                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    if (ti === 8) {
+                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        return;
+                    }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
                     summarizedRows[ti] = Array.from({ length: totalPages }, (_, k) => k);
                     finish('所有页面已设为隐藏');
@@ -6487,6 +6502,11 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 }
 
                 function processRange(str) {
+                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    if (ti === 8) {
+                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏', '核心记忆');
+                        return;
+                    }
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
                     const parts = str.split(/[,，]/);
                     let count = 0;
@@ -6624,6 +6644,11 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                         color: '#fff'
                     }
                 }).on('click', () => {
+                    // ✅ 表8（关于用户）是核心记忆，不允许隐藏
+                    if (ti === 8) {
+                        customAlert('⚠️ 【关于用户】是核心记忆，不可隐藏\n\n此表格内容会永久保留，不会因总结而被标记为已归档。', '核心记忆');
+                        return;
+                    }
                     // 将所有行索引加入隐藏列表
                     if (!summarizedRows[ti]) summarizedRows[ti] = [];
                     summarizedRows[ti] = Array.from({ length: totalRows }, (_, k) => k);

@@ -1038,9 +1038,10 @@
                     if (isTableMode && currentMode === 'table') {
                         // 用户勾选了静默保存，自动标记为绿色并结束
                         // 🔧 修复：只标记参与总结的表格（filteredTables），而不是所有表格（tables）
+                        // ✅ 排除表8（关于用户）：核心记忆永不隐藏
                         filteredTables.forEach(table => {
                             const ti = m.all().indexOf(table);
-                            if (ti !== -1) {
+                            if (ti !== -1 && ti !== 8) { // 跳过表8
                                 for (let ri = 0; ri < table.r.length; ri++) window.Gaigai.markAsSummarized(ti, ri);
                             }
                         });
