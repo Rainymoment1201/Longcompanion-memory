@@ -9109,7 +9109,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <label style="font-weight: 600;">
                     💉 注入记忆表格
-                    <i class="fa-solid fa-circle-info" id="gg_memory_injection_info" style="margin-left: 6px; color: #17a2b8; cursor: pointer; font-size: 14px;"></i>
                 </label>
                 <input type="checkbox" id="gg_c_table_inj" ${C.tableInj ? 'checked' : ''} style="transform: scale(1.2);">
             </div>
@@ -9402,91 +9401,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                         console.warn('⚠️ [总结来源] 云端同步失败:', err);
                     });
                 }
-            });
-
-            // 💉 注入记忆表格说明图标点击事件
-            $('#gg_memory_injection_info').on('click', function () {
-                // 🌙 Dark Mode Fix: Use dynamic colors based on darkMode setting
-                const dialogBg = UI.darkMode ? '#1e1e1e' : '#ffffff';
-                const titleColor = UI.darkMode ? '#e0e0e0' : '#333';
-                const textColor = UI.darkMode ? '#c0c0c0' : '#555';
-                const accentColor = UI.darkMode ? '#4db8ff' : '#155724';
-                const codeBg = UI.darkMode ? '#2a2a2a' : '#f0f0f0';
-                const borderColor = UI.darkMode ? 'rgba(255, 255, 255, 0.15)' : '#f0f0f0';
-
-                // 创建一个小型弹窗而不是使用pop
-                const $overlay = $('<div>', {
-                    // class: 'g-ov', <--- 删掉了这一行
-                    css: {
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0, 0, 0, 0.2)',
-                        zIndex: 20000010,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '20px'
-                    }
-                });
-
-                const $dialog = $('<div>', {
-                    css: {
-                        background: dialogBg,
-                        borderRadius: '12px',
-                        padding: '20px',
-                        maxWidth: '500px',
-                        width: '90%',
-                        maxHeight: '80vh',
-                        overflow: 'auto',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
-                        margin: 'auto'
-                    }
-                });
-
-                const $title = $('<div>', {
-                    html: `<strong style="font-size: 15px; color: ${titleColor};">💉 变量模式说明</strong>`,
-                    css: { marginBottom: '15px', paddingBottom: '10px', borderBottom: `2px solid ${borderColor}` }
-                });
-
-                const $content = $('<div>', {
-                    css: { fontSize: '13px', lineHeight: '1.8', color: 'var(--g-tc)' },
-                    html: `
-                        <div style="margin-bottom: 12px; font-weight: 600; color: ${accentColor};">🌟 变量模式：</div>
-                        <div style="margin-bottom: 12px;">如需调整表格里面的内容在上下文的位置，用户需手动将对应的变量，新增条目插入到预设中：</div>
-                        <div style="margin-bottom: 8px;">• 表格插入变量(不含总结表)：<code style="background:${codeBg}; color:${accentColor}; padding:2px 6px; border-radius:3px; font-weight:bold;">{{MEMORY_TABLE}}</code> (强制发送表格内容)</div>
-                        <div style="margin-bottom: 8px;">• 总结插入变量(不含其他表格)：<code style="background:${codeBg}; color:${accentColor}; padding:2px 6px; border-radius:3px; font-weight:bold;">{{MEMORY_SUMMARY}}</code> (强制发送总结内容)</div>
-                        `
-                });
-
-                const $closeBtn = $('<button>', {
-                    text: '知道了',
-                    css: {
-                        marginTop: '15px',
-                        padding: '8px 20px',
-                        background: UI.c || '#888',
-                        color: UI.tc || '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        width: '100%'
-                    }
-                }).on('click', () => $overlay.remove());
-
-                $dialog.append($title, $content, $closeBtn);
-                $overlay.append($dialog);
-                $('body').append($overlay);
-
-                // 点击遮罩层也可以关闭
-                $overlay.on('click', function (e) {
-                    if (e.target === $overlay[0]) {
-                        $overlay.remove();
-                    }
-                });
             });
 
             $('#gg_open_probe').on('click', function () {
