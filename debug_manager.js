@@ -224,7 +224,6 @@
                 'gg_api',
                 'gg_ui',
                 'gg_timestamp',
-                'gg_notice_ver',
                 'gg_profiles'
             ];
 

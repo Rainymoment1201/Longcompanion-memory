@@ -3534,7 +3534,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         const style = `
         /* 1. 字体与重置 */
         #gai-main-pop div, #gai-main-pop p, #gai-main-pop span, #gai-main-pop td, #gai-main-pop th, #gai-main-pop button, #gai-main-pop input, #gai-main-pop select, #gai-main-pop textarea, #gai-main-pop h3, #gai-main-pop h4,
-        #gai-edit-pop *, #gai-summary-pop *, #gai-about-pop * {
+        #gai-edit-pop *, #gai-summary-pop * {
             font-family: "Segoe UI", Roboto, "Helvetica Neue", "Microsoft YaHei", "微软雅黑", Arial, sans-serif !important;
             line-height: 1.5;
             -webkit-font-smoothing: auto;
@@ -3565,8 +3565,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         #gai-backfill-pop .g-w,
         #gai-summary-pop .g-w,
         #gai-optimize-pop .g-w,
-        #gai-edit-pop .g-w,
-        #gai-about-pop .g-w {
+        #gai-edit-pop .g-w {
             background: ${bg_window} !important;
         }
 
@@ -3762,11 +3761,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             color: ${color_text} !important;       /* 强制跟随主题色 */
         }
 
-        /* 修复图标颜色 */
-        #gai-about-btn {
-            color: inherit !important;
-            opacity: 0.8;
-        }
 
         .g-x { background: transparent !important; border: none !important; color: ${color_text} !important; cursor: pointer !important; font-size: 20px !important; width: 32px !important; height: 32px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
         .g-back { background: transparent !important; border: none !important; color: ${color_text} !important; cursor: pointer !important; font-size: var(--g-fs, 12px) !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; padding: 4px 8px !important; border-radius: 4px !important; }
@@ -4257,8 +4251,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             #gai-backfill-pop .g-w,
             #gai-summary-pop .g-w,
             #gai-optimize-pop .g-w,
-            #gai-edit-pop .g-w,
-            #gai-about-pop .g-w {
+            #gai-edit-pop .g-w {
                 background: rgba(30, 30, 30, 0.75) !important; /* 与主窗口一致 */
                 backdrop-filter: blur(20px) saturate(180%) !important;
             }
@@ -4591,9 +4584,6 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         const titleHtml = `
         <div class="g-title-box">
             <span>记忆表格</span>
-            <i id="gai-about-btn" class="fa-solid fa-circle-info"
-               style="margin-left:6px; cursor:pointer; opacity:0.8; font-size:14px; transition:all 0.2s;"
-               title="使用说明 & 检查更新"></i>
         </div>
     `;
 
@@ -4605,23 +4595,10 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
 
         pop(titleHtml, h);
 
-        checkForUpdates(V.replace(/^v+/i, ''));
-        const lastReadVer = localStorage.getItem('gg_notice_ver');
-        if (lastReadVer !== V) {
-            setTimeout(() => { showAbout(true); }, 300);
-        }
-
         setTimeout(bnd, 100);
 
         // ✨ 3. 渲染完成后，手动触发一次点击以确保内容显示正确 (模拟用户切换)
         setTimeout(() => {
-            $('#gai-about-btn').hover(
-                function () { $(this).css({ opacity: 1, transform: 'scale(1.1)' }); },
-                function () { $(this).css({ opacity: 0.8, transform: 'scale(1)' }); }
-            ).on('click', (e) => {
-                e.stopPropagation();
-                showAbout();
-            });
 
             // ⚡ 关键修复：强制切换到之前选中的标签对应的表格内容
             $('.g-tbc').hide(); // 先隐藏所有
@@ -11757,200 +11734,5 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
 
     // 启动加载器（在 window.Gaigai 完全初始化之后）
     loadDependencies();
-
-
-    // ✨✨✨ 重写：关于页 & 更新检查 & 首次弹窗 (颜色修复版) ✨✨✨
-    function showAbout(isAutoPopup = false) {
-        const cleanVer = V.replace(/^v+/i, '');
-        const repoUrl = `https://github.com/${REPO_PATH}`;
-
-        // 检查是否已经勾选过“不再显示”
-        const isChecked = localStorage.getItem('gg_notice_ver') === V;
-
-        // 统一使用 #333 作为文字颜色，确保在白色磨砂背景上清晰可见
-        const textColor = '#333333';
-
-        const h = `
-        <div class="g-p" style="display:flex; flex-direction:column; gap:12px; height:100%;">
-            <!-- 头部版本信息 -->
-            <div style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:12px; text-align:center; flex-shrink:0;">
-                <div style="font-size:18px; font-weight:bold; margin-bottom:5px; color:var(--g-tc);">
-                    📘 记忆表格 (Memory Context)
-                </div>
-                <div style="font-size:12px; opacity:0.8; margin-bottom:8px; color:var(--g-tc);">
-                    当前版本: v${cleanVer}
-                    <span style="margin: 0 8px; opacity: 0.5;">|</span>
-                    <a href="https://pcnsnlcapni4.feishu.cn/wiki/AfPuwMlCSieXbckthFUc5bQYnMe" target="_blank" style="text-decoration:none; color:var(--g-tc); border-bottom:1px dashed var(--g-tc);">
-                       📖 详细使用说明书
-                    </a>
-                </div>
-                <div id="update-status" style="background:rgba(0,0,0,0.05); padding:6px; border-radius:4px; font-size:11px; display:flex; align-items:center; justify-content:center; gap:8px; color:var(--g-tc);">
-                    ⏳ 正在连接 GitHub 检查更新...
-                </div>
-            </div>
-
-            <div style="flex:1; overflow-y:auto; background:rgba(255,255,255,0.4); border-radius:8px; padding:15px; font-size:13px; line-height:1.6; border:1px solid rgba(255,255,255,0.3);">
-
-                <!--⚠️ 备份警告 -->
-                <div style="background:rgba(255, 165, 0, 0.1); border:1px solid rgba(255, 140, 0, 0.3); border-radius:6px; padding:8px; margin-bottom:15px; color:#d35400; font-size:11px; display:flex; align-items:center; gap:6px;">
-                    ⚠️
-                    <strong>安全提醒：</strong>更新插件前，请点击【📥 导出】备份数据！
-                </div>
-
-                <!-- ✅ 第一部分：本次更新日志 (高亮显示) -->
-                <div style="margin-bottom:20px; border-bottom:1px dashed rgba(0,0,0,0.1); padding-bottom:15px;">
-                    <h4 style="margin-top:0; margin-bottom:10px; color:var(--g-tc); display:flex; align-items:center; gap:6px;">
-                        📢 本次更新内容 (v${cleanVer})
-                    </h4>
-                    <ul style="margin:0; padding-left:20px; font-size:12px; color:var(--g-tc); opacity:0.9;">
-                        <li><strong>⚠️重要通知⚠️：</strong>从1.7.5版本前更新的用户，必须进入【提示词区】上方的【表格结构编辑区】，手动将表格【恢复默认】。</li>
-                        <li><strong>⚠️提醒⚠️：</strong>一般中转或公益站优先使用中转/反代端口，若不通过则选择op兼容端口</li>
-                        <li><strong>新增：</strong>新增行数支持移动到其他表格的功能.</li>
-                        <li><strong>优化：</strong>优化表格搜索功能.</li>
-                        <li><strong>优化：</strong>优化变量的容错问题.</li>
-                    </ul>
-                </div>
-
-                <!-- 📘 第二部分：功能指南 -->
-                <div>
-                    <h4 style="margin-top:0; margin-bottom:10px; color:var(--g-tc); opacity:0.9;">
-                        📘 功能介绍 & 新手引导
-                    </h4>
-
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
-                        <div style="background:rgba(255,255,255,0.3); padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.05);">
-                            <div style="font-weight:bold; margin-bottom:4px; color:var(--g-tc); font-size:12px;">📊 填表模式 (二选一)</div>
-                            <div style="font-size:11px; color:var(--g-tc); opacity:0.8;">
-                                • <strong>批量填表：</strong> 每N楼写一次。优点是省Token。<br>
-                                <span style="opacity:0.6; font-size:10px;">(推荐开启批量填表 + 独立API)</span>
-                            </div>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.3); padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.05);">
-                            <div style="font-weight:bold; margin-bottom:4px; color:var(--g-tc); font-size:12px;">📝 总结模式</div>
-                            <div style="font-size:11px; color:var(--g-tc); opacity:0.8;">
-                                • <strong>表格源：</strong> 依据表格里的填表数据生成总结。<br>
-                                • <strong>聊天源：</strong> 依据聊天历史楼层生成总结。<br>
-                                <span style="opacity:0.6; font-size:10px;">(可在配置中切换总结来源)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="background:rgba(76, 175, 80, 0.1); border:1px solid rgba(76, 175, 80, 0.3); padding:10px; border-radius:6px;">
-                        <div style="font-weight:bold; color:#2e7d32; margin-bottom:4px; font-size:12px;">💡 新手/旧卡 推荐流程</div>
-                        <ol style="margin:0; padding-left:15px; font-size:11px; color:#2e7d32;">
-                            <li>点击 <strong>【⚡ 追溯】</strong> 按钮，进行一次全量或分批填表，补全历史数据。</li>
-                            <li>前往 <strong>【⚙️ 配置】</strong>，开启 <strong>[批量填表]</strong> 和 <strong>[自动总结]</strong>。</li>
-                            <li>享受全自动托管，AI 会自动维护记忆。</li>
-                        </ol>
-                    </div>
-                </div>
-
-                <div style="margin-top:15px; font-size:11px; text-align:center; opacity:0.7;">
-                    <a href="${repoUrl}" target="_blank" style="text-decoration:none; color:var(--g-tc); border-bottom:1px dashed var(--g-tc);">
-                       🔗 GitHub 项目主页
-                    </a>
-                </div>
-            </div>
-
-            <div style="padding-top:5px; border-top:1px solid rgba(255,255,255,0.2); text-align:right; flex-shrink:0;">
-                <label style="font-size:12px; cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:6px; color:var(--g-tc); opacity:0.9;">
-                    <input type="checkbox" id="dont-show-again" ${isChecked ? 'checked' : ''}>
-                    不再自动弹出 v${cleanVer} 说明
-                </label>
-            </div>
-        </div>`;
-
-        $('#gai-about-pop').remove();
-        const $o = $('<div>', { id: 'gai-about-pop', class: 'g-ov', css: { 'z-index': '10000002' } });
-        const $p = $('<div>', { class: 'g-w', css: { width: '500px', maxWidth: '90vw', height: '650px', maxHeight: '85vh' } });
-        const $hd = $('<div>', { class: 'g-hd' });
-
-        const titleText = isAutoPopup ? '🎉 欢迎使用新版本' : '关于 & 指南';
-        $hd.append(`<h3 style="color:${UI.tc}; flex:1;">${titleText}</h3>`);
-        const $x = $('<button>', { class: 'g-x', text: '×', css: { background: 'none', border: 'none', color: UI.tc, cursor: 'pointer', fontSize: '22px' } }).on('click', () => $o.remove());
-        $hd.append($x);
-
-        const $bd = $('<div>', { class: 'g-bd', html: h });
-        $p.append($hd, $bd);
-        $o.append($p);
-        $('body').append($o);
-
-        setTimeout(() => {
-            $('#dont-show-again').on('change', function () {
-                if ($(this).is(':checked')) {
-                    localStorage.setItem('gg_notice_ver', V);
-                } else {
-                    localStorage.removeItem('gg_notice_ver');
-                }
-            });
-            checkForUpdates(cleanVer);
-        }, 100);
-
-        $o.on('click', e => { if (e.target === $o[0]) $o.remove(); });
-    }
-
-
-    async function checkForUpdates(currentVer) {
-        // 1. 获取UI元素
-        const $status = $('#update-status'); // 说明页里的状态文字
-        const $icon = $('#gai-about-btn');     // 标题栏的图标
-
-        try {
-            // 2. 从 GitHub Raw 读取 main 分支的 index.js
-            const rawUrl = `https://raw.githubusercontent.com/${REPO_PATH}/main/index.js`;
-            const response = await fetch(rawUrl, { cache: "no-store" });
-            if (!response.ok) throw new Error('无法连接 GitHub');
-            const text = await response.text();
-            const match = text.match(/const\s+V\s*=\s*['"]v?([\d\.]+)['"]/);
-
-            if (match && match[1]) {
-                const latestVer = match[1];
-                const hasUpdate = compareVersions(latestVer, currentVer) > 0;
-
-                if (hasUpdate) {
-                    // ✨✨✨ 发现新版本：点亮图标 ✨✨✨
-                    $icon.addClass('g-has-update').attr('title', `🚀 发现新版本: v${latestVer} (点击查看)`);
-
-                    // 如果说明页正打开着，也更新里面的文字
-                    if ($status.length > 0) {
-                        $status.html(`
-                            <div style="color:#d32f2f; font-weight:bold;">
-                                ⬆️ 发现新版本: v${latestVer} (请手动更新)
-                            </div>
-                            <div style="font-size:10px; color:var(--g-tc); opacity:0.8; margin-top:4px;">
-                                由于网络环境差异，请前往 GitHub 下载或使用 git pull 更新
-                            </div>
-                        `);
-                    }
-                } else {
-                    // 没有新版本
-                    $icon.removeClass('g-has-update').attr('title', '使用说明 & 检查更新'); // 移除红点
-
-                    if ($status.length > 0) {
-                        $status.html(`<div style="color:#28a745; font-weight:bold;">✅ 当前已是最新版本</div>`);
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('自动更新检查失败:', e);
-            if ($status.length > 0) {
-                $status.html(`<div style="color:#ff9800;">⚠️ 检查失败: ${e.message}</div>`);
-            }
-        }
-    }
-
-    // 版本号比较辅助函数 (1.2.0 > 1.1.9)
-    // ✨✨✨ 修复：加上 function 关键字 ✨✨✨
-    function compareVersions(v1, v2) {
-        const p1 = v1.split('.').map(Number);
-        const p2 = v2.split('.').map(Number);
-        for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-            const n1 = p1[i] || 0;
-            const n2 = p2[i] || 0;
-            if (n1 > n2) return 1;
-            if (n1 < n2) return -1;
-        }
-        return 0;
-    }
 
 })();
