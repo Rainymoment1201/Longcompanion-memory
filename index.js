@@ -115,7 +115,9 @@
     // ==================== 默认表格定义（出厂设置模板） ====================
     // 最后一个表永远是"总结表"，前面的都是"数据表"
     // 🔄 列名前缀规则：# = 覆盖模式（Overwrite），无前缀 = 追加模式（Append）
-    const DEFAULT_TABLES = [
+
+    // 🎭 方案A：角色扮演模式（默认，表8关闭时使用）
+    const DEFAULT_TABLES_ROLEPLAY = [
         { n: '主线剧情', c: ['#日期', '#开始时间', '#完结时间', '事件概要', '#状态'] },
         { n: '支线追踪', c: ['#状态', '#支线名', '#开始时间', '#完结时间', '事件追踪', '#关键NPC'] },
         { n: '角色状态', c: ['#角色名', '#状态变化', '#时间', '#原因', '#当前位置'] },
@@ -127,6 +129,23 @@
         { n: '关于我', c: ['#信息类型', '#记录时间', '具体内容'] },
         { n: '记忆总结', c: ['#表格类型', '总结内容'] }
     ];
+
+    // 💬 方案B：真人陪伴模式（表8开启时使用）
+    const DEFAULT_TABLES_COMPANION = [
+        { n: '日常对话', c: ['#日期', '#时间', '话题', '我的心情', 'Ta的反应'] },
+        { n: '重要事件', c: ['#日期', '#事件类型', '详细描述', '我的感受'] },
+        { n: '我的状态', c: ['#日期', '#心情', '#身体状态', '当前困扰'] },
+        { n: 'Ta的了解', c: ['#方面', '具体内容', '#更新时间', '#备注'] },
+        { n: '我们的关系', c: ['#时间点', '关系变化', '#原因', '#亲密度'] },
+        { n: '共同回忆', c: ['#日期', '回忆内容', '#地点', '#重要程度'] },
+        { n: '待办事项', c: ['#事项', '#截止日期', '#优先级', '#状态', '#备注'] },
+        { n: '承诺约定', c: ['#约定时间', '约定内容', '#完成状态'] },
+        { n: '关于我', c: ['#信息类型', '#记录时间', '具体内容'] },
+        { n: '对话总结', c: ['#日期范围', '总结内容'] }
+    ];
+
+    // 🔄 默认使用角色扮演模式（会在初始化时根据 enableUserInfoTable 动态切换）
+    const DEFAULT_TABLES = DEFAULT_TABLES_ROLEPLAY;
 
     // ----- 默认列宽配置（单位：像素） -----
     const DEFAULT_COL_WIDTHS = {
@@ -1171,7 +1190,12 @@
             this.s = [];
             this.id = null;
             this.structureBound = false;
-            this.initTables(DEFAULT_TABLES);
+
+            // 🔄 根据【关于我】开关自动选择表格结构
+            const tableStructure = C.enableUserInfoTable ? DEFAULT_TABLES_COMPANION : DEFAULT_TABLES_ROLEPLAY;
+            console.log(`🎭 [表格模式] ${C.enableUserInfoTable ? '真人陪伴模式（方案B）' : '角色扮演模式（方案A）'}`);
+
+            this.initTables(tableStructure);
         }
 
         // 动态初始化表格结构（支持用户自定义）
@@ -9654,7 +9678,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
 
             // ✨✨✨ 【关于我】开关和按钮事件绑定 ✨✨✨
             // 【启用关于我记录】开关
-            $('#gg_c_enable_user_info').on('change', function () {
+            $('#gg_c_enable_user_info').on('change', async function () {
                 const isEnabled = $(this).is(':checked');
                 const $persistSection = $('#gg_user_info_persist_section');
                 const $persistCheckbox = $('#gg_c_persist_user_info');
@@ -9669,6 +9693,42 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
 
                 syncUIToConfig();
                 m.save(false, true);
+
+                // 🔄 【核心功能】切换表格结构模式
+                const newTableStructure = isEnabled ? DEFAULT_TABLES_COMPANION : DEFAULT_TABLES_ROLEPLAY;
+                const modeName = isEnabled ? '真人陪伴模式（方案B）' : '角色扮演模式（方案A）';
+
+                console.log(`🎭 [表格模式切换] 正在切换到: ${modeName}`);
+
+                // 提示用户
+                const confirmed = await customConfirm(
+                    `检测到【关于我】开关状态已变更\n\n` +
+                    `将切换表格结构为：${modeName}\n\n` +
+                    `⚠️ 注意：\n` +
+                    `• 表格名称和列名会改变\n` +
+                    `• 现有数据会尽可能保留\n` +
+                    `• 切换后PE提示词也会自动更新\n\n` +
+                    `是否确认切换？`,
+                    '表格模式切换'
+                );
+
+                if (confirmed) {
+                    // 重新初始化表格结构（保留数据）
+                    m.initTables(newTableStructure, true);
+
+                    // 重新渲染界面
+                    if (typeof showViewPopup === 'function') {
+                        showViewPopup(m);
+                    }
+
+                    console.log(`✅ [表格模式切换] 已成功切换到: ${modeName}`);
+                    await customAlert(`表格模式已切换为：${modeName}`, '成功');
+                } else {
+                    // 用户取消，恢复开关状态
+                    $(this).prop('checked', !isEnabled);
+                    C.enableUserInfoTable = !isEnabled;
+                    console.log('❌ [表格模式切换] 用户取消，已恢复原状态');
+                }
             });
 
             $('#gg_btn_clear_user_info_local').off('click').on('click', async function () {
