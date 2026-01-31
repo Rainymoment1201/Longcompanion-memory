@@ -11487,13 +11487,13 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
             const src = scripts[i].getAttribute('src');
             if (!src) continue;
 
-            // 只要路径包含插件文件夹名，就认为是它
-            if (src.includes('ST-Memory-Context/index.js')) {
+            // 只要路径包含插件文件夹名，就认为是它（支持多个文件夹名）
+            if (src.includes('ST-Memory-Context/index.js') || src.includes('Longcompanion-memory/index.js')) {
                 return src.replace(/\/index\.js$/i, '').replace(/\\index\.js$/i, '');
             }
         }
 
-        console.error('❌ [Gaigai] 无法定位插件路径，依赖加载将失败！请检查文件夹名称是否为 ST-Memory-Context');
+        console.error('❌ [Gaigai] 无法定位插件路径，依赖加载将失败！请检查文件夹名称是否为 ST-Memory-Context 或 Longcompanion-memory');
         return '';
     }
 
