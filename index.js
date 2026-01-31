@@ -108,7 +108,10 @@
             S: 0                    // S级不衰减
         },
         protectionThreshold: 3,     // 提及次数≥3次，衰减率减半
-        minWeight: 0.0              // 最小权重值
+        minWeight: 0.0,             // 最小权重值
+        // 🧪 时间模拟功能（用于快速测试）
+        useSimulatedTime: false,    // 是否启用时间模拟
+        simulatedDate: null         // 模拟的当前日期（Date对象）
     };
 
     // ========================================================================
@@ -1755,6 +1758,17 @@
         // ==================== 记忆衰减系统 ====================
 
         /**
+         * 获取当前日期（支持模拟时间）
+         * @returns {Date} 当前日期或模拟日期
+         */
+        getCurrentDate() {
+            if (DECAY_CONFIG.useSimulatedTime && DECAY_CONFIG.simulatedDate) {
+                return new Date(DECAY_CONFIG.simulatedDate);
+            }
+            return new Date();
+        }
+
+        /**
          * 格式化日期为 YYYY-MM-DD
          */
         formatDate(date) {
@@ -1789,12 +1803,13 @@
         checkAndExecuteDecay() {
             if (!DECAY_CONFIG.enableDecay) return;
 
-            const today = this.formatDate(new Date());
+            const today = this.formatDate(this.getCurrentDate());
             const lastDecayDate = localStorage.getItem('gg_last_decay_date') || '';
 
             // 判断：今天还没衰减过
             if (lastDecayDate !== today) {
-                console.log(`📅 新的一天：${lastDecayDate} → ${today}`);
+                const timeInfo = DECAY_CONFIG.useSimulatedTime ? ' [模拟时间]' : '';
+                console.log(`📅 新的一天${timeInfo}：${lastDecayDate} → ${today}`);
 
                 // 计算间隔天数
                 const days = lastDecayDate ? this.calculateDaysDiff(lastDecayDate, today) : 0;
@@ -4775,6 +4790,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
                 <button id="gai-btn-cleanup" title="清理数据选项">🧹 清表</button>
                 <button id="gai-btn-theme" title="设置外观">🎨 主题</button>
                 <button id="gai-btn-config" title="插件设置">⚙️ 配置</button>
+                <button id="gai-btn-time-sim" title="时间模拟器（测试用）" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🕐 时间</button>
             </div>
         </div>
     `;
@@ -6565,6 +6581,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         $('#gai-btn-theme').off('click').on('click', () => navTo('主题设置', shtm));
         $('#gai-btn-back').off('click').on('click', () => navTo('⚡ 剧情追溯填表', () => window.Gaigai.BackfillManager.showUI()));
         $('#gai-btn-config').off('click').on('click', () => navTo('配置', shcf));
+        $('#gai-btn-time-sim').off('click').on('click', () => navTo('🕐 时间模拟器', showTimeSimulator));
 
         // ✨✨✨ 修改：移除显隐操作的成功弹窗，只刷新表格 ✨✨✨
         // ✨✨✨ 新增：显/隐按钮逻辑（含总结表专属弹窗） ✨✨✨
@@ -8077,6 +8094,185 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         }
 
         return { success: true, summary: content.trim() };
+    }
+
+    // ==================== 时间模拟器UI ====================
+    function showTimeSimulator() {
+        const currentDate = m.formatDate(m.getCurrentDate());
+        const lastDecayDate = localStorage.getItem('gg_last_decay_date') || '从未执行';
+        const isSimulating = DECAY_CONFIG.useSimulatedTime;
+
+        const html = `
+            <div style="padding: 20px; max-width: 600px; color: ${UI.tc};">
+                <h2 style="margin: 0 0 20px 0; color: ${UI.tc};">🕐 时间模拟器</h2>
+                <p style="margin-bottom: 20px; opacity: 0.8; font-size: 13px;">
+                    用于快速测试记忆衰减功能，可以模拟时间变化来观察记忆权重的衰减效果。
+                </p>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="margin-bottom: 10px;">
+                        <strong>📅 当前系统时间：</strong> ${currentDate}
+                        ${isSimulating ? ' <span style="color: #ff9800; font-weight: bold;">[模拟模式]</span>' : ' <span style="color: #4caf50;">[真实时间]</span>'}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>⏰ 上次衰减时间：</strong> ${lastDecayDate}
+                    </div>
+                    <div>
+                        <strong>🔄 衰减状态：</strong> ${DECAY_CONFIG.enableDecay ? '<span style="color: #4caf50;">已启用</span>' : '<span style="color: #f44336;">已禁用</span>'}
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 15px 0; font-size: 14px;">时间控制</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="time-sim-enable" ${isSimulating ? 'checked' : ''} style="transform: scale(1.3);">
+                            <span>启用时间模拟模式</span>
+                        </label>
+                    </div>
+
+                    <div id="time-sim-controls" style="display: ${isSimulating ? 'block' : 'none'};">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px;">设置模拟日期：</label>
+                            <input type="date" id="time-sim-date" value="${currentDate}"
+                                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: ${UI.tc};">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                            <button id="time-sim-minus-7" style="padding: 8px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer;">
+                                -7天
+                            </button>
+                            <button id="time-sim-minus-1" style="padding: 8px; border-radius: 4px; background: #ff9800; color: white; border: none; cursor: pointer;">
+                                -1天
+                            </button>
+                            <button id="time-sim-today" style="padding: 8px; border-radius: 4px; background: #4caf50; color: white; border: none; cursor: pointer;">
+                                今天
+                            </button>
+                            <button id="time-sim-plus-1" style="padding: 8px; border-radius: 4px; background: #2196f3; color: white; border: none; cursor: pointer;">
+                                +1天
+                            </button>
+                            <button id="time-sim-plus-7" style="padding: 8px; border-radius: 4px; background: #9c27b0; color: white; border: none; cursor: pointer;">
+                                +7天
+                            </button>
+                            <button id="time-sim-plus-30" style="padding: 8px; border-radius: 4px; background: #673ab7; color: white; border: none; cursor: pointer;">
+                                +30天
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin-bottom: 20px;">
+                    <strong style="color: #4caf50;">💡 使用提示：</strong>
+                    <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; opacity: 0.9;">
+                        <li>启用模拟模式后，所有时间相关功能都会使用模拟时间</li>
+                        <li>可以快进时间来测试记忆衰减效果</li>
+                        <li>发送一条消息后会触发衰减检查</li>
+                        <li>测试完成后记得关闭模拟模式，恢复真实时间</li>
+                    </ul>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button id="time-sim-trigger-decay" style="flex: 1; padding: 12px; border-radius: 4px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold;">
+                        🔄 立即触发衰减检查
+                    </button>
+                    <button id="time-sim-reset" style="flex: 1; padding: 12px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer; font-weight: bold;">
+                        🔁 重置衰减记录
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const $container = $('.g-tb');
+        $container.html(html);
+
+        // 绑定事件
+        $('#time-sim-enable').on('change', function() {
+            const enabled = $(this).is(':checked');
+            DECAY_CONFIG.useSimulatedTime = enabled;
+            $('#time-sim-controls').toggle(enabled);
+
+            if (!enabled) {
+                DECAY_CONFIG.simulatedDate = null;
+            } else {
+                const dateInput = $('#time-sim-date').val();
+                DECAY_CONFIG.simulatedDate = new Date(dateInput);
+            }
+
+            console.log(`🕐 [时间模拟] ${enabled ? '已启用' : '已禁用'}`);
+            if (typeof toastr !== 'undefined') {
+                toastr.success(`时间模拟${enabled ? '已启用' : '已禁用'}`, '时间模拟器');
+            }
+        });
+
+        $('#time-sim-date').on('change', function() {
+            const dateValue = $(this).val();
+            DECAY_CONFIG.simulatedDate = new Date(dateValue);
+            console.log(`🕐 [时间模拟] 设置日期为: ${dateValue}`);
+            if (typeof toastr !== 'undefined') {
+                toastr.info(`模拟日期: ${dateValue}`, '时间模拟器');
+            }
+        });
+
+        // 快捷按钮
+        const adjustDate = (days) => {
+            let current = DECAY_CONFIG.simulatedDate ? new Date(DECAY_CONFIG.simulatedDate) : new Date();
+            current.setDate(current.getDate() + days);
+            DECAY_CONFIG.simulatedDate = current;
+            $('#time-sim-date').val(m.formatDate(current));
+            console.log(`🕐 [时间模拟] 调整 ${days > 0 ? '+' : ''}${days} 天: ${m.formatDate(current)}`);
+            if (typeof toastr !== 'undefined') {
+                toastr.info(`时间调整至: ${m.formatDate(current)}`, '时间模拟器');
+            }
+        };
+
+        $('#time-sim-minus-7').on('click', () => adjustDate(-7));
+        $('#time-sim-minus-1').on('click', () => adjustDate(-1));
+        $('#time-sim-today').on('click', () => {
+            const today = new Date();
+            DECAY_CONFIG.simulatedDate = today;
+            $('#time-sim-date').val(m.formatDate(today));
+            console.log(`🕐 [时间模拟] 重置为今天: ${m.formatDate(today)}`);
+            if (typeof toastr !== 'undefined') {
+                toastr.success('已重置为今天', '时间模拟器');
+            }
+        });
+        $('#time-sim-plus-1').on('click', () => adjustDate(1));
+        $('#time-sim-plus-7').on('click', () => adjustDate(7));
+        $('#time-sim-plus-30').on('click', () => adjustDate(30));
+
+        // 触发衰减检查
+        $('#time-sim-trigger-decay').on('click', function() {
+            try {
+                m.checkAndExecuteDecay();
+                refreshTable(parseInt($('.g-t.act').data('i')) || 0);
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('衰减检查已执行，请查看控制台日志', '时间模拟器');
+                }
+            } catch (e) {
+                console.error('❌ [时间模拟] 衰减检查失败:', e);
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('衰减检查失败: ' + e.message, '时间模拟器');
+                }
+            }
+        });
+
+        // 重置衰减记录
+        $('#time-sim-reset').on('click', async function() {
+            const confirmed = await customConfirm(
+                '确定要重置衰减记录吗？\n\n这将清除上次衰减时间标记，下次触发时将重新开始计算。',
+                '重置确认'
+            );
+            if (confirmed) {
+                localStorage.removeItem('gg_last_decay_date');
+                console.log('🔁 [时间模拟] 衰减记录已重置');
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('衰减记录已重置', '时间模拟器');
+                }
+                // 刷新UI
+                showTimeSimulator();
+            }
+        });
     }
 
     function shtm() {
