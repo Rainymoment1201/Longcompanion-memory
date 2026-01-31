@@ -1037,7 +1037,14 @@
             if (weightColIndex === -1 || levelColIndex === -1) return;
 
             // 获取当前权重（使用列索引）
-            const weight = parseFloat(row[weightColIndex]) || 0;
+            let weight = parseFloat(row[weightColIndex]) || 0;
+
+            // 🔴 权重上限检查：超过1.0自动修正为1.0
+            if (weight > 1.0) {
+                console.warn(`⚠️ [权重上限] 表${this.n} 行${rowIndex}: 权重${weight.toFixed(2)}超过上限，已修正为1.0`);
+                weight = 1.0;
+                row[weightColIndex] = '1.0';
+            }
 
             // 根据权重自动计算等级
             let level = 'C';
