@@ -6581,7 +6581,7 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         $('#gai-btn-theme').off('click').on('click', () => navTo('主题设置', shtm));
         $('#gai-btn-back').off('click').on('click', () => navTo('⚡ 剧情追溯填表', () => window.Gaigai.BackfillManager.showUI()));
         $('#gai-btn-config').off('click').on('click', () => navTo('配置', shcf));
-        $('#gai-btn-time-sim').off('click').on('click', () => navTo('🕐 时间模拟器', showTimeSimulator));
+        $('#gai-btn-time-sim').off('click').on('click', () => showTimeSimulator());
 
         // ✨✨✨ 修改：移除显隐操作的成功弹窗，只刷新表格 ✨✨✨
         // ✨✨✨ 新增：显/隐按钮逻辑（含总结表专属弹窗） ✨✨✨
@@ -8102,90 +8102,102 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
         const lastDecayDate = localStorage.getItem('gg_last_decay_date') || '从未执行';
         const isSimulating = DECAY_CONFIG.useSimulatedTime;
 
+        // 移除旧弹窗
+        $('#gai-time-sim-pop').remove();
+
         const html = `
-    <div class="g-p">
-        <h4>🕐 时间模拟器</h4>
-        <p style="margin-bottom: 20px; opacity: 0.8; font-size: 13px;">
-            用于快速测试记忆衰减功能，可以模拟时间变化来观察记忆权重的衰减效果。
-        </p>
+        <div style="padding: 20px; max-width: 600px; color: ${UI.tc};">
+            <h4>🕐 时间模拟器</h4>
+            <p style="margin-bottom: 20px; opacity: 0.8; font-size: 13px;">
+                用于快速测试记忆衰减功能，可以模拟时间变化来观察记忆权重的衰减效果。
+            </p>
 
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <div style="margin-bottom: 10px;">
-                <strong>📅 当前系统时间：</strong> ${currentDate}
-                ${isSimulating ? ' <span style="color: #ff9800; font-weight: bold;">[模拟模式]</span>' : ' <span style="color: #4caf50;">[真实时间]</span>'}
-            </div>
-            <div style="margin-bottom: 10px;">
-                <strong>⏰ 上次衰减时间：</strong> ${lastDecayDate}
-            </div>
-            <div>
-                <strong>🔄 衰减状态：</strong> ${DECAY_CONFIG.enableDecay ? '<span style="color: #4caf50;">已启用</span>' : '<span style="color: #f44336;">已禁用</span>'}
-            </div>
-        </div>
-
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 14px;">时间控制</h3>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="checkbox" id="time-sim-enable" ${isSimulating ? 'checked' : ''} style="width:20px; height:20px; cursor:pointer;">
-                    <span>启用时间模拟模式</span>
-                </label>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="margin-bottom: 10px;">
+                    <strong>📅 当前系统时间：</strong> ${currentDate}
+                    ${isSimulating ? ' <span style="color: #ff9800; font-weight: bold;">[模拟模式]</span>' : ' <span style="color: #4caf50;">[真实时间]</span>'}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>⏰ 上次衰减时间：</strong> ${lastDecayDate}
+                </div>
+                <div>
+                    <strong>🔄 衰减状态：</strong> ${DECAY_CONFIG.enableDecay ? '<span style="color: #4caf50;">已启用</span>' : '<span style="color: #f44336;">已禁用</span>'}
+                </div>
             </div>
 
-            <div id="time-sim-controls">
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 14px;">时间控制</h3>
+
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px;">设置模拟日期：</label>
-                    <input type="date" id="time-sim-date" value="${currentDate}"
-                        style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: ${UI.tc};">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="time-sim-enable" ${isSimulating ? 'checked' : ''} style="width:20px; height:20px; cursor:pointer;">
+                        <span>启用时间模拟模式</span>
+                    </label>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
-                    <button id="time-sim-minus-7" style="padding: 8px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer;">
-                        -7天
-                    </button>
-                    <button id="time-sim-minus-1" style="padding: 8px; border-radius: 4px; background: #ff9800; color: white; border: none; cursor: pointer;">
-                        -1天
-                    </button>
-                    <button id="time-sim-today" style="padding: 8px; border-radius: 4px; background: #4caf50; color: white; border: none; cursor: pointer;">
-                        今天
-                    </button>
-                    <button id="time-sim-plus-1" style="padding: 8px; border-radius: 4px; background: #2196f3; color: white; border: none; cursor: pointer;">
-                        +1天
-                    </button>
-                    <button id="time-sim-plus-7" style="padding: 8px; border-radius: 4px; background: #9c27b0; color: white; border: none; cursor: pointer;">
-                        +7天
-                    </button>
-                    <button id="time-sim-plus-30" style="padding: 8px; border-radius: 4px; background: #673ab7; color: white; border: none; cursor: pointer;">
-                        +30天
-                    </button>
+                <div id="time-sim-controls">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">设置模拟日期：</label>
+                        <input type="date" id="time-sim-date" value="${currentDate}"
+                            style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: ${UI.tc};">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <button id="time-sim-minus-7" style="padding: 8px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer;">
+                            -7天
+                        </button>
+                        <button id="time-sim-minus-1" style="padding: 8px; border-radius: 4px; background: #ff9800; color: white; border: none; cursor: pointer;">
+                            -1天
+                        </button>
+                        <button id="time-sim-today" style="padding: 8px; border-radius: 4px; background: #4caf50; color: white; border: none; cursor: pointer;">
+                            今天
+                        </button>
+                        <button id="time-sim-plus-1" style="padding: 8px; border-radius: 4px; background: #2196f3; color: white; border: none; cursor: pointer;">
+                            +1天
+                        </button>
+                        <button id="time-sim-plus-7" style="padding: 8px; border-radius: 4px; background: #9c27b0; color: white; border: none; cursor: pointer;">
+                            +7天
+                        </button>
+                        <button id="time-sim-plus-30" style="padding: 8px; border-radius: 4px; background: #673ab7; color: white; border: none; cursor: pointer;">
+                            +30天
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin-bottom: 20px;">
-            <strong style="color: #4caf50;">💡 使用提示：</strong>
-            <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; opacity: 0.9;">
-                <li>启用模拟模式后，所有时间相关功能都会使用模拟时间</li>
-                <li>可以快进时间来测试记忆衰减效果</li>
-                <li>点击快捷按钮后会自动调整日期</li>
-                <li>点击"立即触发衰减检查"来测试衰减效果</li>
-                <li>测试完成后记得关闭模拟模式，恢复真实时间</li>
-            </ul>
-        </div>
+            <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin-bottom: 20px;">
+                <strong style="color: #4caf50;">💡 使用提示：</strong>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; opacity: 0.9;">
+                    <li>启用模拟模式后，所有时间相关功能都会使用模拟时间</li>
+                    <li>可以快进时间来测试记忆衰减效果</li>
+                    <li>点击快捷按钮后会自动调整日期</li>
+                    <li>点击"立即触发衰减检查"来测试衰减效果</li>
+                    <li>测试完成后记得关闭模拟模式，恢复真实时间</li>
+                </ul>
+            </div>
 
-        <div style="display: flex; gap: 10px;">
-            <button id="time-sim-trigger-decay" style="flex: 1; padding: 12px; border-radius: 4px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold;">
-                🔄 立即触发衰减检查
-            </button>
-            <button id="time-sim-reset" style="flex: 1; padding: 12px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer; font-weight: bold;">
-                🔁 重置衰减记录
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button id="time-sim-trigger-decay" style="flex: 1; padding: 12px; border-radius: 4px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; font-weight: bold;">
+                    🔄 立即触发衰减检查
+                </button>
+                <button id="time-sim-reset" style="flex: 1; padding: 12px; border-radius: 4px; background: #f44336; color: white; border: none; cursor: pointer; font-weight: bold;">
+                    🔁 重置衰减记录
+                </button>
+            </div>
         </div>
-    </div>
         `;
 
-        const $container = $('.g-tb');
-        $container.html(html);
+        // 创建独立弹窗
+        const $overlay = $('<div>', { id: 'gai-time-sim-pop', class: 'g-ov', css: { 'z-index': '10000000' } });
+        const $window = $('<div>', { class: 'g-w', css: { width: '600px', maxWidth: '90vw', height: 'auto' } });
+        const $header = $('<div>', { class: 'g-hd', html: `<h3 style="color:${UI.tc};">🕐 时间模拟器</h3>` });
+        const $closeBtn = $('<button>', { class: 'g-x', text: '×', css: { background: 'none', border: 'none', color: UI.tc, cursor: 'pointer', fontSize: '22px' } }).on('click', () => $overlay.remove());
+        const $body = $('<div>', { class: 'g-bd', html: html });
+
+        $header.append($closeBtn);
+        $window.append($header, $body);
+        $overlay.append($window);
+        $('body').append($overlay);
 
         // 绑定事件
         $('#time-sim-enable').on('change', function() {
