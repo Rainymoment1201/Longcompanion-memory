@@ -973,7 +973,9 @@
             });
 
             // ⭐ 新增：自动计算并更新等级
-            if (d['#权重'] !== undefined || this.r[i]['#权重'] !== undefined) {
+            // 检查是否更新了权重列（使用列索引）
+            const weightColIndex = this.c.findIndex(col => col === '#权重');
+            if (weightColIndex !== -1 && (d[weightColIndex] !== undefined || this.r[i][weightColIndex] !== undefined)) {
                 this.autoUpdateLevel(i);
             }
         }
@@ -982,16 +984,18 @@
                 // 在指定行的下方插入
                 this.r.splice(insertAfterIndex + 1, 0, d);
 
-                // ⭐ 自动计算等级
-                if (d['#权重'] !== undefined) {
+                // ⭐ 自动计算等级（使用列索引）
+                const weightColIndex = this.c.findIndex(col => col === '#权重');
+                if (weightColIndex !== -1 && d[weightColIndex] !== undefined) {
                     this.autoUpdateLevel(insertAfterIndex + 1);
                 }
             } else {
                 // 默认追加到末尾
                 this.r.push(d);
 
-                // ⭐ 自动计算等级
-                if (d['#权重'] !== undefined) {
+                // ⭐ 自动计算等级（使用列索引）
+                const weightColIndex = this.c.findIndex(col => col === '#权重');
+                if (weightColIndex !== -1 && d[weightColIndex] !== undefined) {
                     this.autoUpdateLevel(this.r.length - 1);
                 }
             }
@@ -1025,8 +1029,15 @@
             const row = this.r[rowIndex];
             if (!row) return;
 
-            // 获取当前权重
-            const weight = parseFloat(row['#权重']) || 0;
+            // 找到权重和等级列的索引
+            const weightColIndex = this.c.findIndex(col => col === '#权重');
+            const levelColIndex = this.c.findIndex(col => col === '#等级');
+
+            // 如果该表没有权重列或等级列，跳过
+            if (weightColIndex === -1 || levelColIndex === -1) return;
+
+            // 获取当前权重（使用列索引）
+            const weight = parseFloat(row[weightColIndex]) || 0;
 
             // 根据权重自动计算等级
             let level = 'C';
@@ -1034,9 +1045,9 @@
             else if (weight >= 0.7) level = 'A';
             else if (weight >= 0.4) level = 'B';
 
-            // 自动更新等级字段
-            const oldLevel = row['#等级'];
-            row['#等级'] = level;
+            // 自动更新等级字段（使用列索引）
+            const oldLevel = row[levelColIndex];
+            row[levelColIndex] = level;
 
             // 如果等级发生变化，打印日志
             if (oldLevel && oldLevel !== level) {
@@ -1839,15 +1850,26 @@
                 const sheet = this.s[tableIndex];
                 if (!sheet || !sheet.r || sheet.r.length === 0) continue;
 
+                // 找到权重、等级、提及次数列的索引
+                const weightColIndex = sheet.c.findIndex(col => col === '#权重');
+                const levelColIndex = sheet.c.findIndex(col => col === '#等级');
+                const mentionColIndex = sheet.c.findIndex(col => col === '#提及次数');
+
+                // 如果该表没有权重列，跳过
+                if (weightColIndex === -1) continue;
+
                 // 遍历每一行
                 sheet.r.forEach((row, rowIndex) => {
-                    const level = row['#等级'];
+                    // 使用列索引访问数据
+                    const level = levelColIndex !== -1 ? row[levelColIndex] : null;
                     if (level === 'S') return; // S级跳过
+
+                    const oldWeight = parseFloat(row[weightColIndex]) || 0;
+                    if (oldWeight === 0) return; // 没有权重，跳过
 
                     decayCount++;
 
-                    const oldWeight = parseFloat(row['#权重']) || 0;
-                    const mentions = parseInt(row['#提及次数']) || 0;
+                    const mentions = mentionColIndex !== -1 ? (parseInt(row[mentionColIndex]) || 0) : 0;
 
                     // 计算衰减率
                     let rate = DECAY_CONFIG.decayRate[level] || DECAY_CONFIG.decayRate['C'];
@@ -1862,13 +1884,15 @@
                     const newWeight = Math.max(DECAY_CONFIG.minWeight, oldWeight - totalDecay);
                     const newLevel = this.calculateLevel(newWeight);
 
-                    // ⭐ 直接修改数据对象
-                    row['#权重'] = newWeight.toFixed(2);
-                    row['#等级'] = newLevel;
+                    // ⭐ 直接修改数据对象（使用列索引）
+                    row[weightColIndex] = newWeight.toFixed(2);
+                    if (levelColIndex !== -1) {
+                        row[levelColIndex] = newLevel;
+                    }
 
                     if (oldWeight !== newWeight) {
                         changeCount++;
-                        console.log(`  📉 表${tableIndex} 行${rowIndex}: ${level}(${oldWeight.toFixed(2)}) → ${newLevel}(${newWeight.toFixed(2)}) [衰减-${totalDecay.toFixed(2)}]`);
+                        console.log(`  📉 表${tableIndex}(${sheet.n}) 行${rowIndex}: ${level}(${oldWeight.toFixed(2)}) → ${newLevel}(${newWeight.toFixed(2)}) [衰减-${totalDecay.toFixed(2)}]`);
                     }
                 });
             }
