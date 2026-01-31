@@ -98,6 +98,19 @@
         lastBackfillIndex: 0
     };
 
+    // ==================== 记忆衰减配置 ====================
+    const DECAY_CONFIG = {
+        enableDecay: true,          // 启用记忆衰减
+        decayRate: {
+            C: 0.05,                // C级每天衰减0.05
+            B: 0.03,                // B级每天衰减0.03
+            A: 0.02,                // A级每天衰减0.02
+            S: 0                    // S级不衰减
+        },
+        protectionThreshold: 3,     // 提及次数≥3次，衰减率减半
+        minWeight: 0.0              // 最小权重值
+    };
+
     // ========================================================================
     // ⚠️ 提示词管理已迁移到 prompt_manager.js
     // 通过 window.Gaigai.PromptManager 访问提示词相关功能
@@ -955,14 +968,29 @@
                     }
                 }
             });
+
+            // ⭐ 新增：自动计算并更新等级
+            if (d['#权重'] !== undefined || this.r[i]['#权重'] !== undefined) {
+                this.autoUpdateLevel(i);
+            }
         }
         ins(d, insertAfterIndex = null) {
             if (insertAfterIndex !== null && insertAfterIndex >= 0 && insertAfterIndex < this.r.length) {
                 // 在指定行的下方插入
                 this.r.splice(insertAfterIndex + 1, 0, d);
+
+                // ⭐ 自动计算等级
+                if (d['#权重'] !== undefined) {
+                    this.autoUpdateLevel(insertAfterIndex + 1);
+                }
             } else {
                 // 默认追加到末尾
                 this.r.push(d);
+
+                // ⭐ 自动计算等级
+                if (d['#权重'] !== undefined) {
+                    this.autoUpdateLevel(this.r.length - 1);
+                }
             }
         }
         del(i) { if (i >= 0 && i < this.r.length) this.r.splice(i, 1); }
@@ -988,6 +1016,30 @@
         clear() { this.r = []; }
         json() { return { n: this.n, c: this.c, r: this.r }; }
         from(d) { this.r = d.r || []; }
+
+        // ⭐ 新增方法：自动更新等级
+        autoUpdateLevel(rowIndex) {
+            const row = this.r[rowIndex];
+            if (!row) return;
+
+            // 获取当前权重
+            const weight = parseFloat(row['#权重']) || 0;
+
+            // 根据权重自动计算等级
+            let level = 'C';
+            if (weight >= 1.0) level = 'S';
+            else if (weight >= 0.7) level = 'A';
+            else if (weight >= 0.4) level = 'B';
+
+            // 自动更新等级字段
+            const oldLevel = row['#等级'];
+            row['#等级'] = level;
+
+            // 如果等级发生变化，打印日志
+            if (oldLevel && oldLevel !== level) {
+                console.log(`🔄 [自动等级] 表${this.n} 行${rowIndex}: ${oldLevel} → ${level} (权重${weight.toFixed(2)})`);
+            }
+        }
 
         // ✅ 过滤逻辑：只发未总结的行，但保留原始行号
         txt(ti) {
@@ -1699,6 +1751,118 @@
         }
 
         ctx() { return (typeof SillyTavern !== 'undefined' && SillyTavern.getContext) ? SillyTavern.getContext() : null; }
+
+        // ==================== 记忆衰减系统 ====================
+
+        /**
+         * 格式化日期为 YYYY-MM-DD
+         */
+        formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        /**
+         * 计算两个日期之间的天数差
+         */
+        calculateDaysDiff(date1, date2) {
+            const d1 = new Date(date1);
+            const d2 = new Date(date2);
+            return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+        }
+
+        /**
+         * 根据权重自动计算等级
+         */
+        calculateLevel(weight) {
+            if (weight >= 1.0) return 'S';
+            if (weight >= 0.7) return 'A';
+            if (weight >= 0.4) return 'B';
+            return 'C';
+        }
+
+        /**
+         * 检查并执行记忆衰减（每次发送消息时调用）
+         */
+        checkAndExecuteDecay() {
+            if (!DECAY_CONFIG.enableDecay) return;
+
+            const today = this.formatDate(new Date());
+            const lastDecayDate = localStorage.getItem('gg_last_decay_date') || '';
+
+            // 判断：今天还没衰减过
+            if (lastDecayDate !== today) {
+                console.log(`📅 新的一天：${lastDecayDate} → ${today}`);
+
+                // 计算间隔天数
+                const days = lastDecayDate ? this.calculateDaysDiff(lastDecayDate, today) : 0;
+
+                // 只有间隔天数>0才衰减（防止首次运行就衰减）
+                if (days > 0) {
+                    this.executeMemoryDecay(days);
+                }
+
+                // 标记今天已衰减
+                localStorage.setItem('gg_last_decay_date', today);
+            }
+        }
+
+        /**
+         * 执行记忆衰减
+         * @param {number} days - 间隔天数
+         */
+        executeMemoryDecay(days) {
+            console.log(`🕐 执行记忆衰减 (间隔${days}天)`);
+
+            let decayCount = 0;
+            let changeCount = 0;
+
+            // 遍历所有表格（除了最后一个总结表）
+            for (let tableIndex = 0; tableIndex < this.s.length - 1; tableIndex++) {
+                const sheet = this.s[tableIndex];
+                if (!sheet || !sheet.r || sheet.r.length === 0) continue;
+
+                // 遍历每一行
+                sheet.r.forEach((row, rowIndex) => {
+                    const level = row['#等级'];
+                    if (level === 'S') return; // S级跳过
+
+                    decayCount++;
+
+                    const oldWeight = parseFloat(row['#权重']) || 0;
+                    const mentions = parseInt(row['#提及次数']) || 0;
+
+                    // 计算衰减率
+                    let rate = DECAY_CONFIG.decayRate[level] || DECAY_CONFIG.decayRate['C'];
+
+                    // 提及次数保护：≥3次，衰减率减半
+                    if (mentions >= DECAY_CONFIG.protectionThreshold) {
+                        rate *= 0.5;
+                    }
+
+                    // 计算新权重
+                    const totalDecay = rate * days;
+                    const newWeight = Math.max(DECAY_CONFIG.minWeight, oldWeight - totalDecay);
+                    const newLevel = this.calculateLevel(newWeight);
+
+                    // ⭐ 直接修改数据对象
+                    row['#权重'] = newWeight.toFixed(2);
+                    row['#等级'] = newLevel;
+
+                    if (oldWeight !== newWeight) {
+                        changeCount++;
+                        console.log(`  📉 表${tableIndex} 行${rowIndex}: ${level}(${oldWeight.toFixed(2)}) → ${newLevel}(${newWeight.toFixed(2)}) [衰减-${totalDecay.toFixed(2)}]`);
+                    }
+                });
+            }
+
+            // 保存数据到localStorage
+            this.save(false, true);
+
+            console.log(`✅ 衰减完成：扫描${decayCount}条，更新${changeCount}条`);
+        }
 
         // ==================== 【关于我】全局记忆管理 ====================
 
@@ -9804,6 +9968,13 @@ updateRow(1, 0, {4: "王五销毁了图纸..."})
     function omsg(id) {
         // 🔴 全局主开关守卫
         if (!C.masterSwitch) return;
+
+        // ⏰ 记忆衰减检查（每次消息渲染时执行）
+        try {
+            m.checkAndExecuteDecay();
+        } catch (e) {
+            console.error('❌ [记忆衰减] 执行失败:', e);
+        }
 
         try {
             const x = m.ctx();
